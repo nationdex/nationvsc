@@ -130,7 +130,9 @@ async function validateDocument(document, collection) {
             // Too many arguments
             if (providedArgs.length > args.length && !args.at(-1)?.rest) {
                 const end = document.positionAt(closeIndex + 1);
-                diagnostics.push(new vscode.Diagnostic(new vscode.Range(start, end), `Function \`${fn.name}\` expects ${args.length} argument${args.length === 1 ? "" : "s"} at most, received ${providedArgs.length}`, vscode.DiagnosticSeverity.Error));
+                diagnostics.push(new vscode.Diagnostic(new vscode.Range(start, end), args.length === 1
+                    ? vscode.l10n.t("Function `{0}` expects 1 argument at most, received {1}", fn.name, providedArgs.length)
+                    : vscode.l10n.t("Function `{0}` expects {1} arguments at most, received {2}", fn.name, args.length, providedArgs.length), vscode.DiagnosticSeverity.Error));
             }
         }
     }

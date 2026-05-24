@@ -162,7 +162,9 @@ export async function validateDocument(
 				const end = document.positionAt(closeIndex + 1)
 				diagnostics.push(new vscode.Diagnostic(
 					new vscode.Range(start, end),
-					`Function \`${fn.name}\` expects ${args.length} argument${args.length === 1 ? "" : "s"} at most, received ${providedArgs.length}`,
+					args.length === 1
+						? vscode.l10n.t("Function `{0}` expects 1 argument at most, received {1}", fn.name, providedArgs.length)
+						: vscode.l10n.t("Function `{0}` expects {1} arguments at most, received {2}", fn.name, args.length, providedArgs.length),
 					vscode.DiagnosticSeverity.Error
 				))
 			}

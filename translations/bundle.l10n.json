@@ -33,6 +33,8 @@
   "Function `{0}` requires brackets": "Function `{0}` requires brackets",
   "Function `{0}` is missing brace closure": "Function `{0}` is missing brace closure",
   "Function `{0}` is missing argument `{1}`": "Function `{0}` is missing argument `{1}`",
+  "Function `{0}` expects 1 argument at most, received {1}": "Function `{0}` expects 1 argument at most, received {1}",
+  "Function `{0}` expects {1} arguments at most, received {2}": "Function `{0}` expects {1} arguments at most, received {2}",
   "$(folder) Workspace Settings": "$(folder) Workspace Settings",
   "Workspace": "Workspace",
   "Folder": "Folder",

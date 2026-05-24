@@ -2,6 +2,7 @@
 .vscode-test/**
 .vscode-test-web/**
 src/**
+scripts/**
 .gitignore
 vsc-extension-quickstart.md
 **/tsconfig.json
@@ -12,3 +13,4 @@ vsc-extension-quickstart.md
 .tests/**
 \.env
 assets/examples/
+crowdin.yml

@@ -1,0 +1,11 @@
+{
+  "extension.description": "Offizielle Visual Studio Code-Erweiterung für ForgeScript.",
+  "command.createConfig.title": "Konfigurationsdatei erstellen (.forgevsc.json)",
+  "command.reloadGuideMetadata.title": "Leitfäden aktualisieren",
+  "command.openGuide.title": "Leitfaden öffnen",
+  "command.createGuide.title": "Leitfaden erstellen",
+  "command.openGuideExternal.title": "Leitfaden öffnen (External)",
+  "command.openExtensionSettings.title": "Erweiterungseinstellungen öffnen",
+  "view.guides.title": "Leitfäden",
+  "view.guides.welcome": "Keine Leitfäden verfügbar.\n[$(refresh) Leitfäden aktualisieren](command:forgevsc.reloadGuideMetadata)\n[$(add) Leitfaden erstellen](command:forgevsc.createGuide)"
+}

@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.2.2 <sub>(May 25, 2026)</sub>
+
+### Added
+- Added string localization
+
 ## v1.2.1 <sub>(May 09, 2026)</sub>
 
 ### Added

@@ -13,6 +13,7 @@
   "config.workspace.colors.function.name.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #AC75FF",
   "config.workspace.colors.function.dollar.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #FE7CEB",
   "config.workspace.colors.function.semicolon.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #C586C0",
+  "config.workspace.colors.arguments.condition.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #4FC1FF",
   "config.workspace.colors.operators.negation.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #4FA3FF",
   "config.workspace.colors.operators.silent.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #FF9F43",
   "config.workspace.colors.operators.count.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #33D17A",

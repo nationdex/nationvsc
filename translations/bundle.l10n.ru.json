@@ -5,5 +5,9 @@
   "Filter": "Фильтр",
   "Favorites": "Избранное",
   "Later": "Позже",
-  "Folder": "Папка"
+  "Folder": "Папка",
+  "Open": "Открыть",
+  "Overwrite": "Перезаписать",
+  "Default": "По умолчанию",
+  "$(folder) VSCode Folder": "$(folder) Папка VSCode"
 }

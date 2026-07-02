@@ -54,7 +54,7 @@ function registerDefaultCommands(ctx) {
     // Open Extension Settings (UI)
     vscode.commands.registerCommand("forgevsc.openExtensionSettings", async () => {
         const items = [];
-        if (!!vscode.workspace.workspaceFolders?.length) {
+        if (vscode.workspace.workspaceFolders?.length) {
             items.push({
                 label: vscode.l10n.t("$(folder) Workspace Settings"),
                 detail: vscode.workspace.name || vscode.l10n.t("Workspace"),

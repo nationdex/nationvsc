@@ -55,6 +55,8 @@ export function registerHover(ctx: vscode.ExtensionContext) {
                         if (!op) continue
 
                         const start = openIndex + 1 + args[i].start + op.start
+                        if (isIgnored(text, start)) continue
+
                         const end = openIndex + 1 + args[i].start + op.end
                         if (offset < start || offset > end) continue
 

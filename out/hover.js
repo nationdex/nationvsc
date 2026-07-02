@@ -70,6 +70,8 @@ function registerHover(ctx) {
                     if (!op)
                         continue;
                     const start = openIndex + 1 + args[i].start + op.start;
+                    if ((0, _1.isIgnored)(text, start))
+                        continue;
                     const end = openIndex + 1 + args[i].start + op.end;
                     if (offset < start || offset > end)
                         continue;

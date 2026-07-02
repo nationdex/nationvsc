@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.2.8 <sub>(July 02, 2026)</sub>
+
+### Changed
+- Downgraded `@types/vscode` version to ensure compability with older engines
+
 ## v1.2.7 <sub>(June 21, 2026)</sub>
 
 ### Fixed

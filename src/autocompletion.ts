@@ -1,113 +1,137 @@
+import * as vscode from "vscode";
 import {
-    findFunction,
-    findOpeningBracket,
-    FunctionAutocompleteRegex,
-    FunctionHeadRegex,
-    generateUsage,
-    getExtensionConfig,
-    getFunctions,
-    getPackageName,
-    isEscaped,
-    isIgnored,
-    Languages,
-    locateCodeBlock,
-    splitArgs,
-    validateOperatorPrefix
-} from "."
-import * as vscode from "vscode"
+	FunctionAutocompleteRegex,
+	FunctionHeadRegex,
+	findFunction,
+	findOpeningBracket,
+	generateUsage,
+	getExtensionConfig,
+	getFunctions,
+	getPackageName,
+	isEscaped,
+	isIgnored,
+	Languages,
+	locateCodeBlock,
+	splitArgs,
+	validateOperatorPrefix,
+} from ".";
 
 /**
  * Registers the autocompletion for functions and enums.
  * @param ctx The extension context.
  */
 export function registerAutocompletion(ctx: vscode.ExtensionContext) {
-    ctx.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider(Languages, {
-            async provideCompletionItems(document, position) {
-                const config = getExtensionConfig()
-                if (!locateCodeBlock(document, position) || !config.features.autocompletion) return
-                if (isIgnored(document.getText(), document.offsetAt(position))) return
+	ctx.subscriptions.push(
+		vscode.languages.registerCompletionItemProvider(
+			Languages,
+			{
+				async provideCompletionItems(document, position) {
+					const config = getExtensionConfig();
+					if (
+						!locateCodeBlock(document, position) ||
+						!config.features.autocompletion
+					)
+						return;
+					if (isIgnored(document.getText(), document.offsetAt(position)))
+						return;
 
-                const line = document.lineAt(position).text
-                const before = line.substring(0, position.character)
+					const line = document.lineAt(position).text;
+					const before = line.substring(0, position.character);
 
-                // Function autocompletion
-                const match = before.match(FunctionAutocompleteRegex)
-                if (match) {
-                    const startIndex = position.character - match[0].length
-                    if (isEscaped(before, startIndex)) return
+					// Function autocompletion
+					const match = before.match(FunctionAutocompleteRegex);
+					if (match) {
+						const startIndex = position.character - match[0].length;
+						if (isEscaped(before, startIndex)) return;
 
-                    if (!validateOperatorPrefix(match[0]).isInvalidOrder) {
-                        const functions = await getFunctions()
-                        const items = functions.flatMap((fn) => {
-                            const names = [fn.name, ...(fn.aliases ?? [])]
+						if (!validateOperatorPrefix(match[0]).isInvalidOrder) {
+							const functions = await getFunctions();
+							const items = functions.flatMap((fn) => {
+								const names = [fn.name, ...(fn.aliases ?? [])];
 
-                            return names.map((name) => {
-                                const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Function)
+								return names.map((name) => {
+									const item = new vscode.CompletionItem(
+										name,
+										vscode.CompletionItemKind.Function,
+									);
 
-                                item.insertText = name
-                                item.detail = generateUsage(fn)
-                                item.documentation = new vscode.MarkdownString(
-                                    `${(fn.deprecated ? `🛑 **${vscode.l10n.t("Deprecated")}**\n` : fn.experimental ? `⚠️ **${vscode.l10n.t("Experimental")}**\n` : "") + "\n" + fn.description}${fn.version ? `\n\n*@${vscode.l10n.t("since")}* — \`${getPackageName(fn.source) ?? ""} v${fn.version}\`` : ""}`
-                                )
-                                item.kind = vscode.CompletionItemKind.Function
-                                if (fn.deprecated) item.tags = [vscode.CompletionItemTag.Deprecated]
+									item.insertText = name;
+									item.detail = generateUsage(fn);
+									item.documentation = new vscode.MarkdownString(
+										`${(fn.deprecated ? `🛑 **${vscode.l10n.t("Deprecated")}**\n` : fn.experimental ? `⚠️ **${vscode.l10n.t("Experimental")}**\n` : "") + "\n" + fn.description}${fn.version ? `\n\n*@${vscode.l10n.t("since")}* — \`${getPackageName(fn.source) ?? ""} v${fn.version}\`` : ""}`,
+									);
+									item.kind = vscode.CompletionItemKind.Function;
+									if (fn.deprecated)
+										item.tags = [vscode.CompletionItemTag.Deprecated];
 
-                                const startPos = position.translate(0, -match[0].length)
-                                item.range = new vscode.Range(startPos, position)
+									const startPos = position.translate(0, -match[0].length);
+									item.range = new vscode.Range(startPos, position);
 
-                                return item
-                            })
-                        })
+									return item;
+								});
+							});
 
-                        if (items.length) return items
-                    }
-                }
+							if (items.length) return items;
+						}
+					}
 
-                // Enum autocompletion
-                const open = findOpeningBracket(before)
-                if (open !== -1) {
-                    const head = before.slice(0, open)
-                    const argsTyped = before.slice(open + 1)
+					// Enum autocompletion
+					const open = findOpeningBracket(before);
+					if (open !== -1) {
+						const head = before.slice(0, open);
+						const argsTyped = before.slice(open + 1);
 
-                    const argMatch = head.match(FunctionHeadRegex)
-                    if (argMatch) {
-                        const fnName = argMatch[1]
-                        const startIndex = head.lastIndexOf("$")
-                        if (startIndex !== -1 && isEscaped(head, startIndex)) return
+						const argMatch = head.match(FunctionHeadRegex);
+						if (argMatch) {
+							const fnName = argMatch[1];
+							const startIndex = head.lastIndexOf("$");
+							if (startIndex !== -1 && isEscaped(head, startIndex)) return;
 
-                        const found = await findFunction(fnName)
-                        const fn = found?.fn
-                        if (fn?.args) {
-                            const args = fn.args
-                            const lastIndex = args.length - 1
+							const found = await findFunction(fnName);
+							const fn = found?.fn;
+							if (fn?.args) {
+								const args = fn.args;
+								const lastIndex = args.length - 1;
 
-                            const parts = splitArgs(argsTyped)
-                            const activeIndex = parts.length - 1
-                            const argIndex = args[lastIndex]?.rest ? Math.min(activeIndex, lastIndex) : activeIndex
+								const parts = splitArgs(argsTyped);
+								const activeIndex = parts.length - 1;
+								const argIndex = args[lastIndex]?.rest
+									? Math.min(activeIndex, lastIndex)
+									: activeIndex;
 
-                            const activeArg = args[argIndex]
-                            const enumValues = activeArg?.enum || (activeArg.type === "Boolean" ? ["true", "false"] : undefined)
+								const activeArg = args[argIndex];
+								const enumValues =
+									activeArg?.enum ||
+									(activeArg.type === "Boolean"
+										? ["true", "false"]
+										: undefined);
 
-                            if (enumValues) {
-                                const currentValue = parts[activeIndex]?.value ?? ""
+								if (enumValues) {
+									const currentValue = parts[activeIndex]?.value ?? "";
 
-                                return enumValues.map((val: string) => {
-                                    const item = new vscode.CompletionItem(val, vscode.CompletionItemKind.EnumMember)
-                                    const start = position.translate(0, -currentValue.length)
+									return enumValues.map((val: string) => {
+										const item = new vscode.CompletionItem(
+											val,
+											vscode.CompletionItemKind.EnumMember,
+										);
+										const start = position.translate(0, -currentValue.length);
 
-                                    item.insertText = val
-                                    item.range = new vscode.Range(start, position)
+										item.insertText = val;
+										item.range = new vscode.Range(start, position);
 
-                                    return item
-                                })
-                            }
-                        }
-                    }
-                }
+										return item;
+									});
+								}
+							}
+						}
+					}
 
-                return
-            }
-        }, "$", ";", "[")
-    )
+					return;
+				},
+			},
+			"$",
+			";",
+			"[",
+		),
+	);
 }

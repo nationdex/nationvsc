@@ -17,13 +17,13 @@
 			}
 		},
 		{
-            "type": "npm",
-            "script": "compile",
-            "problemMatcher": "$tsc",
-            "presentation": {
-                "reveal": "never"
-            },
-            "group": "build"
-        }
+			"type": "npm",
+			"script": "compile",
+			"problemMatcher": "$tsc",
+			"presentation": {
+				"reveal": "never"
+			},
+			"group": "build"
+		}
 	]
 }

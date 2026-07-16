@@ -1,16 +1,16 @@
+import * as vscode from "vscode";
 import {
 	bracketDepth,
+	FunctionHeadRegex,
 	findFunction,
 	findMatchingBracket,
 	findOpeningBracket,
-	FunctionHeadRegex,
 	getExtensionConfig,
 	isEscaped,
 	isIgnored,
 	Languages,
-	locateCodeBlock
-} from "."
-import * as vscode from "vscode"
+	locateCodeBlock,
+} from ".";
 
 /**
  * Registers the suggestions for function brackets.
@@ -20,57 +20,74 @@ export function registerSuggestions(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerInlineCompletionItemProvider(
 			Languages,
-			new ForgeInlineCompletionItemProvider()
-		)
-	)
+			new ForgeInlineCompletionItemProvider(),
+		),
+	);
 }
 
-class ForgeInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
-	async provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-		const code = locateCodeBlock(document, position)
-		const config = getExtensionConfig()
-		if (!code || !config.features.suggestions) return 
-		
-		const text = document.getText()
-		if (isIgnored(text, document.offsetAt(position))) return
+class ForgeInlineCompletionItemProvider
+	implements vscode.InlineCompletionItemProvider
+{
+	async provideInlineCompletionItems(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	) {
+		const code = locateCodeBlock(document, position);
+		const config = getExtensionConfig();
+		if (!code || !config.features.suggestions) return;
 
-		const slice = code.slice.replace(/[ \t\r]+$/g, "")
-		const nextChar = document.getText(new vscode.Range(position, position.translate(0, 1)))
+		const text = document.getText();
+		if (isIgnored(text, document.offsetAt(position))) return;
+
+		const slice = code.slice.replace(/[ \t\r]+$/g, "");
+		const nextChar = document.getText(
+			new vscode.Range(position, position.translate(0, 1)),
+		);
 
 		// Suggest brackets
 		if (nextChar !== "[") {
-			const match = slice.match(FunctionHeadRegex)
+			const match = slice.match(FunctionHeadRegex);
 			if (match) {
-				const startIndex = slice.lastIndexOf("$")
-				if (startIndex !== -1 && isEscaped(slice, startIndex)) return null
+				const startIndex = slice.lastIndexOf("$");
+				if (startIndex !== -1 && isEscaped(slice, startIndex)) return null;
 
-				const found = await findFunction(match[1])
+				const found = await findFunction(match[1]);
 				if (found?.fn.brackets !== undefined) {
-					return [new vscode.InlineCompletionItem("[]", new vscode.Range(position, position))]
+					return [
+						new vscode.InlineCompletionItem(
+							"[]",
+							new vscode.Range(position, position),
+						),
+					];
 				}
 			}
 		}
 
 		// Suggest closing bracket
 		if (nextChar !== "]") {
-			const openIndex = findOpeningBracket(code.slice)
+			const openIndex = findOpeningBracket(code.slice);
 			if (openIndex !== -1) {
-				const head = code.slice.slice(0, openIndex)
-				const index = head.lastIndexOf("$")
-				if (index !== -1 && isEscaped(head, index)) return null
+				const head = code.slice.slice(0, openIndex);
+				const index = head.lastIndexOf("$");
+				if (index !== -1 && isEscaped(head, index)) return null;
 
 				if (FunctionHeadRegex.test(head)) {
-					const block = text.slice(code.start, code.end)
-					const close = findMatchingBracket(block, openIndex)
-					const missingClosing = bracketDepth(block) > 0
+					const block = text.slice(code.start, code.end);
+					const close = findMatchingBracket(block, openIndex);
+					const missingClosing = bracketDepth(block) > 0;
 
 					if (close === -1 || missingClosing) {
-						return [new vscode.InlineCompletionItem("]", new vscode.Range(position, position))]
+						return [
+							new vscode.InlineCompletionItem(
+								"]",
+								new vscode.Range(position, position),
+							),
+						];
 					}
 				}
 			}
 		}
 
-		return null
+		return null;
 	}
 }

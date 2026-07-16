@@ -1,4 +1,4 @@
 {
-  "command.createConfig.title": "Создайте файл конфигурации (.forgevsc.json)",
-  "view.guides.title": "Руководства"
+	"command.createConfig.title": "Создайте файл конфигурации (.forgevsc.json)",
+	"view.guides.title": "Руководства"
 }

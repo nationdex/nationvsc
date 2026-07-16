@@ -1,10 +1,11 @@
+import * as vscode from "vscode";
 import {
 	createRPCStatusBar,
 	disconnectRPC,
 	FunctionLocation,
+	GuideMetadata,
 	getCustomFunctionLocation,
 	getExtensionConfig,
-	GuideMetadata,
 	loadCustomFunctions,
 	loadExtensionConfig,
 	registerAutocompletion,
@@ -18,172 +19,220 @@ import {
 	registerRPC,
 	registerSignatureHelp,
 	registerSuggestions,
-	validateDocument
-} from "."
-import { IMetadataFunction } from "./types"
-import * as vscode from "vscode"
+	validateDocument,
+} from ".";
+import { IMetadataFunction } from "./types";
 
 export type WorkspacePackage = {
-	name: string
-	value: string
-}
+	name: string;
+	value: string;
+};
 export type PackageSource = {
-	repo: string
-	branch: string
-	label?: string
-}
+	repo: string;
+	branch: string;
+	label?: string;
+};
 
 export type ParsedArg = {
-	value: string
-	start: number
-	end: number
-}
+	value: string;
+	start: number;
+	end: number;
+};
 
 export type FunctionMetadata = IMetadataFunction & {
-	source?: PackageSource
-	location?: FunctionLocation
-}
+	source?: PackageSource;
+	location?: FunctionLocation;
+};
 export type PathMetadata = {
-	functions: string
-	events?: string
-}
+	functions: string;
+	events?: string;
+};
 
 export interface IMetadataCache<T> {
-	version: 1
-	key: string
-	timestamp: number
-	metadata: T
+	version: 1;
+	key: string;
+	timestamp: number;
+	metadata: T;
 }
 
-let functions: FunctionMetadata[] | null = null
-let functionsPromise: Promise<FunctionMetadata[]> | null = null
+let functions: FunctionMetadata[] | null = null;
+let functionsPromise: Promise<FunctionMetadata[]> | null = null;
 
-let guides: GuideMetadata[] | null = null
-let guidesPromise: Promise<GuideMetadata[]> | null = null
+let guides: GuideMetadata[] | null = null;
+let guidesPromise: Promise<GuideMetadata[]> | null = null;
 
-let paths = new Map<string, PathMetadata>()
-let pathsPromise = new Map<string, Promise<PathMetadata | null>>()
+let paths = new Map<string, PathMetadata>();
+let pathsPromise = new Map<string, Promise<PathMetadata | null>>();
 
-let metadataCacheKey: string | null = null
-let isEnabled = true
+let metadataCacheKey: string | null = null;
+let isEnabled = true;
 
-let Context: vscode.ExtensionContext
-export let Logger: vscode.LogOutputChannel
+let Context: vscode.ExtensionContext;
+export let Logger: vscode.LogOutputChannel;
 
-export const OperatorChain = String.raw`(?:!?#?(?:@\[[^\]]?\])?)?`
-export const LooseOperatorChain = String.raw`(?:[!#]|(?:@\[[^\]]?\]))*`
+export const OperatorChain = String.raw`(?:!?#?(?:@\[[^\]]?\])?)?`;
+export const LooseOperatorChain = String.raw`(?:[!#]|(?:@\[[^\]]?\]))*`;
 
-export const FunctionRegex = new RegExp(String.raw`\$${OperatorChain}[a-zA-Z0-9]+`)
-export const FunctionPrefixRegex = new RegExp(String.raw`^\$(!)?(#)?(?:@\[[^\]]*\])?`)
-export const FunctionNameRegex = new RegExp(String.raw`\$${OperatorChain}([a-zA-Z0-9]+)`)
-export const FunctionHeadRegex = new RegExp(String.raw`(\$${OperatorChain}[a-zA-Z0-9]+)$`)
-export const FunctionArgumentRegex = new RegExp(String.raw`\$${OperatorChain}([a-zA-Z0-9]+)\[([^\]]*)$`)
-export const FunctionAutocompleteRegex = new RegExp(String.raw`\$${OperatorChain}[a-zA-Z0-9]*$`)
-export const FunctionOpenScanRegex = new RegExp(String.raw`\$${OperatorChain}[a-zA-Z0-9]+\[`, "g")
-export const FunctionScanRegex = new RegExp(String.raw`\$${LooseOperatorChain}[a-zA-Z0-9]+(?:\[)?`, "g")
-export const LooseFunctionNameRegex = new RegExp(String.raw`^\$${LooseOperatorChain}([a-zA-Z0-9]+)`)
-export const LooseFunctionPrefixRegex = new RegExp(String.raw`^\$${LooseOperatorChain}`)
+export const FunctionRegex = new RegExp(
+	String.raw`\$${OperatorChain}[a-zA-Z0-9]+`,
+);
+export const FunctionPrefixRegex = new RegExp(
+	String.raw`^\$(!)?(#)?(?:@\[[^\]]*\])?`,
+);
+export const FunctionNameRegex = new RegExp(
+	String.raw`\$${OperatorChain}([a-zA-Z0-9]+)`,
+);
+export const FunctionHeadRegex = new RegExp(
+	String.raw`(\$${OperatorChain}[a-zA-Z0-9]+)$`,
+);
+export const FunctionArgumentRegex = new RegExp(
+	String.raw`\$${OperatorChain}([a-zA-Z0-9]+)\[([^\]]*)$`,
+);
+export const FunctionAutocompleteRegex = new RegExp(
+	String.raw`\$${OperatorChain}[a-zA-Z0-9]*$`,
+);
+export const FunctionOpenScanRegex = new RegExp(
+	String.raw`\$${OperatorChain}[a-zA-Z0-9]+\[`,
+	"g",
+);
+export const FunctionScanRegex = new RegExp(
+	String.raw`\$${LooseOperatorChain}[a-zA-Z0-9]+(?:\[)?`,
+	"g",
+);
+export const LooseFunctionNameRegex = new RegExp(
+	String.raw`^\$${LooseOperatorChain}([a-zA-Z0-9]+)`,
+);
+export const LooseFunctionPrefixRegex = new RegExp(
+	String.raw`^\$${LooseOperatorChain}`,
+);
 
-export const ConditionOperatorRegex = /==|!=|<=|>=|<|>/g
-export const InvalidOperatorRegex = /#.*!|@\[\].*!|@\[\].*#/
+export const ConditionOperatorRegex = /==|!=|<=|>=|<|>/g;
+export const InvalidOperatorRegex = /#.*!|@\[\].*!|@\[\].*#/;
 
-export const DocsUrl = "https://docs.botforge.org/"
-export const Languages = ["javascript", "typescript", "javascriptreact", "typescriptreact"]
+export const DocsUrl = "https://docs.botforge.org/";
+export const Languages = [
+	"javascript",
+	"typescript",
+	"javascriptreact",
+	"typescriptreact",
+];
 
-export const FunctionsStorageKey = "forgevsc.functionsCache.v1"
-export const GuidesStorageKey = "forgevsc.guidesCache.v1"
+export const FunctionsStorageKey = "forgevsc.functionsCache.v1";
+export const GuidesStorageKey = "forgevsc.guidesCache.v1";
 
 export const OperatorInfo = {
 	"!": {
 		name: vscode.l10n.t("Negation Operator"),
-		description: vscode.l10n.t(`The negation operator disables any possible output of a function. This can be useful for functions that return a "status" after execution, such as booleans or numbers.`),
+		description: vscode.l10n.t(
+			`The negation operator disables any possible output of a function. This can be useful for functions that return a "status" after execution, such as booleans or numbers.`,
+		),
 	},
 	"#": {
 		name: vscode.l10n.t("Silent Operator"),
-		description: vscode.l10n.t("The silent operator will suppress any error a function might throw and stops further code execution as well."),
+		description: vscode.l10n.t(
+			"The silent operator will suppress any error a function might throw and stops further code execution as well.",
+		),
 	},
 	"@": {
 		name: vscode.l10n.t("Count Operator"),
-		description: vscode.l10n.t("The count operator directly counts the values of a possible array output from a function using a delimiter (separator). This operator only takes in **1 character**."),
-	}
-} as const
+		description: vscode.l10n.t(
+			"The count operator directly counts the values of a possible array output from a function using a delimiter (separator). This operator only takes in **1 character**.",
+		),
+	},
+} as const;
 
 export const ConditionOperatorInfo = {
 	"==": {
 		name: vscode.l10n.t("Equal Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **exactly equal** to the right value.")
+		description: vscode.l10n.t(
+			"Checks whether the left value is **exactly equal** to the right value.",
+		),
 	},
 	"!=": {
 		name: vscode.l10n.t("Not Equal Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **different** from the right value.")
+		description: vscode.l10n.t(
+			"Checks whether the left value is **different** from the right value.",
+		),
 	},
 	"<": {
 		name: vscode.l10n.t("Less Than Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **less than** the right value.")
+		description: vscode.l10n.t(
+			"Checks whether the left value is **less than** the right value.",
+		),
 	},
 	"<=": {
 		name: vscode.l10n.t("Less Than or Equal Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **less than or equal** to the right value.")
+		description: vscode.l10n.t(
+			"Checks whether the left value is **less than or equal** to the right value.",
+		),
 	},
 	">": {
 		name: vscode.l10n.t("Greater Than Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **greater than** the right value.")
+		description: vscode.l10n.t(
+			"Checks whether the left value is **greater than** the right value.",
+		),
 	},
 	">=": {
 		name: vscode.l10n.t("Greater Than or Equal Operator"),
-		description: vscode.l10n.t("Checks whether the left value is **greater than or equal** to the right value.")
-	}
-} as const
+		description: vscode.l10n.t(
+			"Checks whether the left value is **greater than or equal** to the right value.",
+		),
+	},
+} as const;
 
-export type OperatorType = keyof typeof ConditionOperatorInfo
+export type OperatorType = keyof typeof ConditionOperatorInfo;
 
 /**
  * Activates the extension.
  * @param ctx The extension context.
  */
 export async function activate(ctx: vscode.ExtensionContext) {
-	Context = ctx
+	Context = ctx;
 
-	const config = await loadExtensionConfig()
-	isEnabled = isWorkspaceEnabled()
+	const config = await loadExtensionConfig();
+	isEnabled = isWorkspaceEnabled();
 	metadataCacheKey = buildCacheKey(
 		await getForgePackages(),
 		config.additionalPackages,
-		config.customFunctionPaths
-	)
+		config.customFunctionPaths,
+	);
 
-	const name: string = ctx.extension.packageJSON.displayName ?? "ForgeVSC"
-	Logger = vscode.window.createOutputChannel(name, { log: true })
+	const name: string = ctx.extension.packageJSON.displayName ?? "ForgeVSC";
+	Logger = vscode.window.createOutputChannel(name, { log: true });
 
-	ctx.subscriptions.push(Logger)
-	registerDefaultCommands(ctx)
+	ctx.subscriptions.push(Logger);
+	registerDefaultCommands(ctx);
 
 	if (!isEnabled) {
-		Logger.info("Extension is disabled for this workspace.")
-		const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left)
-		status.text = vscode.l10n.t("$(circle-slash) {0} Disabled", name)
-		status.tooltip = vscode.l10n.t("Open Extension Settings")
+		Logger.info("Extension is disabled for this workspace.");
+		const status = vscode.window.createStatusBarItem(
+			vscode.StatusBarAlignment.Left,
+		);
+		status.text = vscode.l10n.t("$(circle-slash) {0} Disabled", name);
+		status.tooltip = vscode.l10n.t("Open Extension Settings");
 		status.command = {
 			command: "forgevsc.openSettings",
 			title: vscode.l10n.t("Open Extension Settings"),
-			arguments: ["forgevsc.global.enabledWorkspaces"]
-		}
-		status.show()
-		ctx.subscriptions.push(status)
+			arguments: ["forgevsc.global.enabledWorkspaces"],
+		};
+		status.show();
+		ctx.subscriptions.push(status);
 	} else {
-		await initialize(ctx)
+		await initialize(ctx);
 	}
 
-	const watcher = vscode.workspace.createFileSystemWatcher("**/{.forgevsc.json,.vscode/.forgevsc.json}")
+	const watcher = vscode.workspace.createFileSystemWatcher(
+		"**/{.forgevsc.json,.vscode/.forgevsc.json}",
+	);
 	ctx.subscriptions.push(
 		watcher,
 		watcher.onDidCreate(reload),
 		watcher.onDidChange(reload),
 		watcher.onDidDelete(reload),
 		vscode.workspace.onDidChangeConfiguration(async (e) => {
-			if (e.affectsConfiguration("forgevsc")) await reload()
-		})
-	)
+			if (e.affectsConfiguration("forgevsc")) await reload();
+		}),
+	);
 }
 
 /**
@@ -191,154 +240,178 @@ export async function activate(ctx: vscode.ExtensionContext) {
  * @param ctx The extension context.
  */
 async function initialize(ctx: vscode.ExtensionContext) {
-	Logger.show(true)
-	Logger.info("Starting extension...")
+	Logger.show(true);
+	Logger.info("Starting extension...");
 
-	const config = getExtensionConfig()
+	const config = getExtensionConfig();
 	if (vscode.env.uiKind === vscode.UIKind.Desktop && config.rpc.enabled) {
-		createRPCStatusBar(ctx)
-		await registerRPC(ctx)
+		createRPCStatusBar(ctx);
+		await registerRPC(ctx);
 	}
 
-	registerCommands(ctx)
-	registerGuidePreview(ctx)
-	registerGuidesView(ctx)
+	registerCommands(ctx);
+	registerGuidePreview(ctx);
+	registerGuidesView(ctx);
 
-	registerDecorations(ctx)
-	registerHover(ctx)
-	registerFolding(ctx)
+	registerDecorations(ctx);
+	registerHover(ctx);
+	registerFolding(ctx);
 
-	registerAutocompletion(ctx)
-	registerSignatureHelp(ctx)
-	registerSuggestions(ctx)
+	registerAutocompletion(ctx);
+	registerSignatureHelp(ctx);
+	registerSuggestions(ctx);
 
-	const diagnostics = vscode.languages.createDiagnosticCollection("forge")
-	ctx.subscriptions.push(diagnostics)
+	const diagnostics = vscode.languages.createDiagnosticCollection("forge");
+	ctx.subscriptions.push(diagnostics);
 
 	for (const editor of vscode.window.visibleTextEditors) {
-		validateDocument(editor.document, diagnostics)
+		validateDocument(editor.document, diagnostics);
 	}
 
 	setTimeout(async () => {
-		const files = await vscode.workspace.findFiles("**/*.{js,ts,jsx,tsx}", "**/node_modules/**")
+		const files = await vscode.workspace.findFiles(
+			"**/*.{js,ts,jsx,tsx}",
+			"**/node_modules/**",
+		);
 		for (const file of files) {
 			try {
-				const doc = await vscode.workspace.openTextDocument(file)
-				validateDocument(doc, diagnostics)
-			} catch { }
+				const doc = await vscode.workspace.openTextDocument(file);
+				validateDocument(doc, diagnostics);
+			} catch {}
 		}
-	}, 0)
+	}, 0);
 
 	ctx.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			validateDocument(event.document, diagnostics)
+			validateDocument(event.document, diagnostics);
 
-			const editor = vscode.window.activeTextEditor
-			if (!editor || (event.document !== editor.document)) return
+			const editor = vscode.window.activeTextEditor;
+			if (!editor || event.document !== editor.document) return;
 
 			for (const change of event.contentChanges) {
 				if (change.text === "" || change.text.includes(";")) {
-					vscode.commands.executeCommand("editor.action.triggerParameterHints")
-					break
+					vscode.commands.executeCommand("editor.action.triggerParameterHints");
+					break;
 				}
 			}
 		}),
-		vscode.workspace.onDidOpenTextDocument((doc) => validateDocument(doc, diagnostics))
-	)
+		vscode.workspace.onDidOpenTextDocument((doc) =>
+			validateDocument(doc, diagnostics),
+		),
+	);
 
 	ctx.subscriptions.push(
 		vscode.languages.registerDefinitionProvider(Languages, {
 			provideDefinition(document, position) {
-				const range = document.getWordRangeAtPosition(position, /\$[a-zA-Z0-9]+/)
-				if (!range) return
+				const range = document.getWordRangeAtPosition(
+					position,
+					/\$[a-zA-Z0-9]+/,
+				);
+				if (!range) return;
 
-				const word = document.getText(range)
-				return getCustomFunctionLocation(word)
-			}
-		})
-	)
+				const word = document.getText(range);
+				return getCustomFunctionLocation(word);
+			},
+		}),
+	);
 
-	const name: string = ctx.extension.packageJSON.displayName ?? "ForgeVSC"
-	const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-	status.text = `$(package) ${name} v` + ctx.extension.packageJSON.version
-	status.command = "forgevsc.openExtensionLog"
-	status.tooltip = vscode.l10n.t("{0} Extension Details", name)
-	status.show()
+	const name: string = ctx.extension.packageJSON.displayName ?? "ForgeVSC";
+	const status = vscode.window.createStatusBarItem(
+		vscode.StatusBarAlignment.Left,
+		100,
+	);
+	status.text = `$(package) ${name} v` + ctx.extension.packageJSON.version;
+	status.command = "forgevsc.openExtensionLog";
+	status.tooltip = vscode.l10n.t("{0} Extension Details", name);
+	status.show();
 
-	ctx.subscriptions.push(status)
+	ctx.subscriptions.push(status);
 
-	Logger.info("Extension started successfully!")
+	Logger.info("Extension started successfully!");
 }
 
 /**
  * Reloads the extension configuration.
- * @returns 
+ * @returns
  */
 async function reload() {
-	const oldKey = metadataCacheKey
-	const config = await loadExtensionConfig()
+	const oldKey = metadataCacheKey;
+	const config = await loadExtensionConfig();
 
 	const newKey = buildCacheKey(
 		await getForgePackages(),
 		config.additionalPackages,
-		config.customFunctionPaths
-	)
+		config.customFunctionPaths,
+	);
 
-	metadataCacheKey = newKey
-	const packagesChanged = oldKey !== null && oldKey !== newKey
-	const newState = isWorkspaceEnabled()
+	metadataCacheKey = newKey;
+	const packagesChanged = oldKey !== null && oldKey !== newKey;
+	const newState = isWorkspaceEnabled();
 
-	const showInformationMessage = async (message: string, openSettings = true) => {
-		const btnReload = vscode.l10n.t("Reload")
-		const btnLater = vscode.l10n.t("Later")
-		const btnOpenSettings = vscode.l10n.t("Open Settings")
+	const showInformationMessage = async (
+		message: string,
+		openSettings = true,
+	) => {
+		const btnReload = vscode.l10n.t("Reload");
+		const btnLater = vscode.l10n.t("Later");
+		const btnOpenSettings = vscode.l10n.t("Open Settings");
 
 		const action = await vscode.window.showInformationMessage(
 			message,
-			...(openSettings ? [btnReload, btnOpenSettings] : [btnReload, btnLater])
-		)
+			...(openSettings ? [btnReload, btnOpenSettings] : [btnReload, btnLater]),
+		);
 
 		if (action === btnReload) {
-			if (openSettings) await vscode.commands.executeCommand("workbench.action.reloadWindow")
-			else await vscode.commands.executeCommand("forgevsc.reloadFunctionMetadata")
+			if (openSettings)
+				await vscode.commands.executeCommand("workbench.action.reloadWindow");
+			else
+				await vscode.commands.executeCommand("forgevsc.reloadFunctionMetadata");
 		} else if (action === btnOpenSettings) {
 			await vscode.commands.executeCommand(
 				"forgevsc.openSettings",
-				"forgevsc.global.enabledWorkspaces"
-			)
+				"forgevsc.global.enabledWorkspaces",
+			);
 		}
-	}
+	};
 
 	if (newState !== isEnabled) {
-		isEnabled = newState
+		isEnabled = newState;
 
 		if (!isEnabled) {
-			Logger.info("Extension disabled after configuration change.")
-			await showInformationMessage(vscode.l10n.t("Extension is disabled for this workspace. Reload recommended."))
-			return
+			Logger.info("Extension disabled after configuration change.");
+			await showInformationMessage(
+				vscode.l10n.t(
+					"Extension is disabled for this workspace. Reload recommended.",
+				),
+			);
+			return;
 		}
 
-		Logger.info("Extension enabled after configuration change.")
-		await showInformationMessage(vscode.l10n.t("Extension has been enabled. Reload to fully activate."))
-		return
+		Logger.info("Extension enabled after configuration change.");
+		await showInformationMessage(
+			vscode.l10n.t("Extension has been enabled. Reload to fully activate."),
+		);
+		return;
 	}
 
 	if (packagesChanged) {
 		await showInformationMessage(
-			vscode.l10n.t("Package sources or custom function paths have changed. Reload to refresh function metadata."),
-			false
-		)
+			vscode.l10n.t(
+				"Package sources or custom function paths have changed. Reload to refresh function metadata.",
+			),
+			false,
+		);
 	}
 }
 
 /**
  * Converts the given value to an array.
  * @param value The value to convert.
- * @returns 
+ * @returns
  */
 export function toArray(value?: string | string[]) {
-	if (!value) return []
-	return Array.isArray(value) ? value : [value]
+	if (!value) return [];
+	return Array.isArray(value) ? value : [value];
 }
 
 /**
@@ -346,26 +419,33 @@ export function toArray(value?: string | string[]) {
  * @param installed The names of the installed packages.
  * @param additional The names of the additional packages.
  * @param customPaths The custom functions folder paths.
- * @returns 
+ * @returns
  */
-function buildCacheKey(installed: WorkspacePackage[], additional: string[] = [], customPaths?: string | string[]) {
+function buildCacheKey(
+	installed: WorkspacePackage[],
+	additional: string[] = [],
+	customPaths?: string | string[],
+) {
 	return JSON.stringify({
 		custom: toArray(customPaths),
 		installed: [...installed].map((x) => x.name).sort(),
-		additional: [...additional].map((x) => x.trim()).filter(Boolean).sort()
-	})
+		additional: [...additional]
+			.map((x) => x.trim())
+			.filter(Boolean)
+			.sort(),
+	});
 }
 
 /**
  * Reads the metadata from cache.
  * @param storageKey The storage key.
  * @param key The cache key.
- * @returns 
+ * @returns
  */
 async function readMetadataCache<T>(storageKey: string, key: string) {
-	const data = Context.globalState.get<IMetadataCache<T>>(storageKey)
-	if (!data || data.version !== 1 || data.key !== key) return null
-	return data.metadata
+	const data = Context.globalState.get<IMetadataCache<T>>(storageKey);
+	if (!data || data.version !== 1 || data.key !== key) return null;
+	return data.metadata;
 }
 
 /**
@@ -379,10 +459,10 @@ async function writeMetadataCache<T>(storageKey: string, key: string, data: T) {
 		key,
 		version: 1,
 		timestamp: Date.now(),
-		metadata: data
-	}
+		metadata: data,
+	};
 
-	await Context.globalState.update(storageKey, payload)
+	await Context.globalState.update(storageKey, payload);
 }
 
 /**
@@ -390,47 +470,50 @@ async function writeMetadataCache<T>(storageKey: string, key: string, data: T) {
  * @param storageKey The storage key.
  */
 export async function clearMetadataCache(storageKey: string) {
-	await Context.globalState.update(storageKey, undefined)
+	await Context.globalState.update(storageKey, undefined);
 }
 
 /**
  * Checks whether the current workspace is enabled.
- * @returns 
+ * @returns
  */
 export function isWorkspaceEnabled() {
-	const folders = vscode.workspace.workspaceFolders
-	if (!folders?.length) return true
+	const folders = vscode.workspace.workspaceFolders;
+	if (!folders?.length) return true;
 
-	const config = getExtensionConfig()
-	const enabled = config.enabledWorkspaces ?? []
-	if (!enabled.length) return true
+	const config = getExtensionConfig();
+	const enabled = config.enabledWorkspaces ?? [];
+	if (!enabled.length) return true;
 
-	return folders.some((folder) => enabled.includes(folder.name))
+	return folders.some((folder) => enabled.includes(folder.name));
 }
 
 /**
  * Returns all forge packages of the workspace.
- * @returns 
+ * @returns
  */
 export async function getForgePackages(): Promise<WorkspacePackage[]> {
-	const folders = vscode.workspace.workspaceFolders
-	if (!folders?.length) return []
+	const folders = vscode.workspace.workspaceFolders;
+	if (!folders?.length) return [];
 
-	const pkgUri = vscode.Uri.joinPath(folders[0].uri, "package.json")
-	let data
+	const pkgUri = vscode.Uri.joinPath(folders[0].uri, "package.json");
+	let data;
 
 	try {
-		data = await vscode.workspace.fs.readFile(pkgUri)
+		data = await vscode.workspace.fs.readFile(pkgUri);
 	} catch {
-		return []
+		return [];
 	}
 
-	const pkg = JSON.parse(new TextDecoder().decode(data))
-	const deps = Object.entries<string>(pkg.dependencies ?? {})
+	const pkg = JSON.parse(new TextDecoder().decode(data));
+	const deps = Object.entries<string>(pkg.dependencies ?? {});
 
 	return deps
-		.filter(([name]) => name.startsWith("@tryforge/") || name.toLowerCase().includes("forge"))
-		.map(([name, value]) => ({ name, value }))
+		.filter(
+			([name]) =>
+				name.startsWith("@tryforge/") || name.toLowerCase().includes("forge"),
+		)
+		.map(([name, value]) => ({ name, value }));
 }
 
 /**
@@ -438,94 +521,103 @@ export async function getForgePackages(): Promise<WorkspacePackage[]> {
  * @param repo The full repo name.
  * @param branch The repo branch.
  * @param label The label used.
- * @returns 
+ * @returns
  */
-export function buildPackage(repo: string, branch?: string, label?: string): PackageSource {
-	return { label, repo, branch: branch || "main" }
+export function buildPackage(
+	repo: string,
+	branch?: string,
+	label?: string,
+): PackageSource {
+	return { label, repo, branch: branch || "main" };
 }
 
 /**
  * Formats a repository name.
  * @param name The name to format.
- * @returns 
+ * @returns
  */
 function formatRepoName(name: string) {
-	const raw = name.toLowerCase().replace(/^@tryforge\//, "")
-	if (!raw.includes("forge")) return null
+	const raw = name.toLowerCase().replace(/^@tryforge\//, "");
+	if (!raw.includes("forge")) return null;
 
-	const stripped = raw.replace(/^forge[._-]?/, "")
+	const stripped = raw.replace(/^forge[._-]?/, "");
 	const upperMap: Record<string, string> = {
 		db: "DB",
 		api: "API",
 		vsc: "VSC",
-		topgg: "TopGG"
-	}
+		topgg: "TopGG",
+	};
 
-	const parts = stripped.split(/[._-]+/).filter(Boolean)
-	const formatted = parts.map((part) => {
-		const lower = part.toLowerCase()
-		if (upperMap[lower]) return upperMap[lower]
-		return lower.charAt(0).toUpperCase() + lower.slice(1)
-	}).join("")
+	const parts = stripped.split(/[._-]+/).filter(Boolean);
+	const formatted = parts
+		.map((part) => {
+			const lower = part.toLowerCase();
+			if (upperMap[lower]) return upperMap[lower];
+			return lower.charAt(0).toUpperCase() + lower.slice(1);
+		})
+		.join("");
 
-	return "Forge" + formatted
+	return "Forge" + formatted;
 }
 
 /**
  * Returns the formatted name of a package.
  * @param source The package source.
- * @returns 
+ * @returns
  */
 export function getPackageName(source?: PackageSource) {
-	if (!source) return null
+	if (!source) return null;
 
-	const name = source.repo.split("/")[1]
-	if (!name) return null
+	const name = source.repo.split("/")[1];
+	if (!name) return null;
 
-	return formatRepoName(name) ?? name
+	return formatRepoName(name) ?? name;
 }
 
 /**
  * Returns the identifier of a package.
  * @param source The package source.
- * @returns 
+ * @returns
  */
 function getPackageId(source: PackageSource) {
-	const text = source.label?.startsWith("@") ? source.label : source.repo
-	return (text.split("/")[1] ?? "").toLowerCase().replace(/[^a-z0-9]/g, "")
+	const text = source.label?.startsWith("@") ? source.label : source.repo;
+	return (text.split("/")[1] ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 /**
  * Gets a repository source.
  * @param pkgName The package name.
- * @returns 
+ * @returns
  */
 function getRepo(pkgName: string) {
-	if (!pkgName.startsWith("@tryforge/")) return null
+	if (!pkgName.startsWith("@tryforge/")) return null;
 
-	const raw = pkgName.split("/")[1]
-	if (!raw) return null
+	const raw = pkgName.split("/")[1];
+	if (!raw) return null;
 
-	const name = formatRepoName(pkgName)
-	if (!name) return null
+	const name = formatRepoName(pkgName);
+	if (!name) return null;
 
-	return buildPackage(`tryforge/${name}`, "main", pkgName)
+	return buildPackage(`tryforge/${name}`, "main", pkgName);
 }
 
 /**
  * Normalizes a GitHub repo input.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 function normalizeRepo(input: string) {
-	const value = input.trim()
-	if (!value) return null
+	const value = input.trim();
+	if (!value) return null;
 
-	const githubShort = value.match(/^github:([^/\s]+)\/([^#/\s]+)(?:#([^/\s]+))?$/i)
-	if (githubShort) return buildPackage(`${githubShort[1]}/${githubShort[2]}`, githubShort[3])
+	const githubShort = value.match(
+		/^github:([^/\s]+)\/([^#/\s]+)(?:#([^/\s]+))?$/i,
+	);
+	if (githubShort)
+		return buildPackage(`${githubShort[1]}/${githubShort[2]}`, githubShort[3]);
 
-	const short = value.match(/^([^/\s]+)\/([^#/\s]+)(?:#([^/\s]+))?$/)
-	if (short) return buildPackage(`${short[1]}/${short[2]}`, short[3])
+	const short = value.match(/^([^/\s]+)\/([^#/\s]+)(?:#([^/\s]+))?$/);
+	if (short) return buildPackage(`${short[1]}/${short[2]}`, short[3]);
 
 	try {
 		const clean = value
@@ -534,23 +626,24 @@ function normalizeRepo(input: string) {
 			.replace(/^git:\/\//i, "https://")
 			.replace(/^ssh:\/\/git@github\.com\//i, "https://github.com/")
 			.replace(/^git@github\.com:/i, "https://github.com/")
-			.replace(/\.git$/, "")
+			.replace(/\.git$/, "");
 
-		const url = new URL(clean)
-		if (!/^(www\.)?github\.com$/i.test(url.hostname)) return null
+		const url = new URL(clean);
+		if (!/^(www\.)?github\.com$/i.test(url.hostname)) return null;
 
-		const parts = url.pathname.split("/").filter(Boolean)
-		if (parts.length < 2) return null
+		const parts = url.pathname.split("/").filter(Boolean);
+		if (parts.length < 2) return null;
 
-		const owner = parts[0]
-		const repo = parts[1]
-		let branch: string | undefined = undefined
+		const owner = parts[0];
+		const repo = parts[1];
+		let branch: string | undefined = undefined;
 
-		if ((parts[2] === "tree" || parts[2] === "blob") && parts[3]) branch = parts[3]
+		if ((parts[2] === "tree" || parts[2] === "blob") && parts[3])
+			branch = parts[3];
 
-		return buildPackage(`${owner}/${repo}`, branch)
+		return buildPackage(`${owner}/${repo}`, branch);
 	} catch {
-		return null
+		return null;
 	}
 }
 
@@ -558,214 +651,268 @@ function normalizeRepo(input: string) {
  * Resolves an installed package input.
  * @param root The root directory.
  * @param pkg The workspace package.
- * @returns 
+ * @returns
  */
-async function resolveInstalledPackage(root: vscode.Uri, pkg: WorkspacePackage) {
-	const { name, value } = pkg
+async function resolveInstalledPackage(
+	root: vscode.Uri,
+	pkg: WorkspacePackage,
+) {
+	const { name, value } = pkg;
 
-	const direct = normalizeRepo(value)
-	if (direct) return buildPackage(direct.repo, direct.branch, name)
+	const direct = normalizeRepo(value);
+	if (direct) return buildPackage(direct.repo, direct.branch, name);
 
-	const pkgUri = vscode.Uri.joinPath(root, "node_modules", name, "package.json")
+	const pkgUri = vscode.Uri.joinPath(
+		root,
+		"node_modules",
+		name,
+		"package.json",
+	);
 	try {
-		const data = await vscode.workspace.fs.readFile(pkgUri)
-		const pkg = JSON.parse(new TextDecoder().decode(data))
+		const data = await vscode.workspace.fs.readFile(pkgUri);
+		const pkg = JSON.parse(new TextDecoder().decode(data));
 
-		const repo = pkg.repository
-		const ref = typeof repo === "string" ? normalizeRepo(repo) : normalizeRepo(repo?.url)
+		const repo = pkg.repository;
+		const ref =
+			typeof repo === "string" ? normalizeRepo(repo) : normalizeRepo(repo?.url);
 
-		if (ref) return buildPackage(ref.repo, ref.branch, name)
-	} catch { }
+		if (ref) return buildPackage(ref.repo, ref.branch, name);
+	} catch {}
 
-	const fallback = getRepo(name)
-	if (!fallback) return null
+	const fallback = getRepo(name);
+	if (!fallback) return null;
 
-	return buildPackage(fallback.repo, fallback.branch, name)
+	return buildPackage(fallback.repo, fallback.branch, name);
 }
 
 /**
  * Resolves an additional package input.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 function resolveAdditionalPackage(input: string) {
-	const ref = normalizeRepo(input)
-	if (!ref) return null
+	const ref = normalizeRepo(input);
+	if (!ref) return null;
 
-	return buildPackage(ref.repo, ref.branch, input)
+	return buildPackage(ref.repo, ref.branch, input);
 }
 
 /**
  * Fetches the functions metadata from a repo.
  * @param source The package source.
- * @returns 
+ * @returns
  */
 async function fetchMetadata(source: PackageSource) {
-	const url = `https://raw.githubusercontent.com/${source.repo}/${source.branch}/metadata/functions.json`
-	const res = await fetch(url).catch(() => undefined)
-	if (!res?.ok) return null
+	const url = `https://raw.githubusercontent.com/${source.repo}/${source.branch}/metadata/functions.json`;
+	const res = await fetch(url).catch(() => undefined);
+	if (!res?.ok) return null;
 
-	const data = await res.json() as FunctionMetadata[]
-	return data.map((x) => ({ ...x, source }))
+	const data = (await res.json()) as FunctionMetadata[];
+	return data.map((x) => ({ ...x, source }));
 }
 
 /**
  * Overwrites matching native functions with custom functions.
  * @param native The native function metadata.
  * @param custom The custom function metadata.
- * @returns 
+ * @returns
  */
-function overwriteNative(native: FunctionMetadata[], custom: FunctionMetadata[]) {
-	const map = new Map<string, FunctionMetadata>()
+function overwriteNative(
+	native: FunctionMetadata[],
+	custom: FunctionMetadata[],
+) {
+	const map = new Map<string, FunctionMetadata>();
 	const overwrite = (data: FunctionMetadata[]) => {
-		for (const fn of data) map.set(fn.name.toLowerCase(), fn)
-	}
+		for (const fn of data) map.set(fn.name.toLowerCase(), fn);
+	};
 
-	overwrite(native)
-	overwrite(custom)
+	overwrite(native);
+	overwrite(custom);
 
-	return [...map.values()]
+	return [...map.values()];
 }
 
 /**
  * Fetches all functions from metadata.
  * @param force Whether to force fetching.
- * @returns 
+ * @returns
  */
 export async function fetchFunctions(force: boolean = false) {
-	const folders = vscode.workspace.workspaceFolders
-	if (!folders?.length) return []
+	const folders = vscode.workspace.workspaceFolders;
+	if (!folders?.length) return [];
 
-	const { additionalPackages, customFunctionPaths } = getExtensionConfig()
-	const root = folders[0].uri
+	const { additionalPackages, customFunctionPaths } = getExtensionConfig();
+	const root = folders[0].uri;
 
-	const rawInstalled = await getForgePackages()
-	const rawAdditional = additionalPackages?.filter(Boolean) ?? []
-	let failedFetch = []
+	const rawInstalled = await getForgePackages();
+	const rawAdditional = additionalPackages?.filter(Boolean) ?? [];
+	let failedFetch = [];
 
-	const def = buildPackage("tryforge/ForgeScript", "main", "@tryforge/forgescript")
-	const getId = (source: PackageSource) => getPackageId(source)
+	const def = buildPackage(
+		"tryforge/ForgeScript",
+		"main",
+		"@tryforge/forgescript",
+	);
+	const getId = (source: PackageSource) => getPackageId(source);
 
-	const installed = (await Promise.all(
-		rawInstalled.map(async (pkg) => {
-			const source = await resolveInstalledPackage(root, pkg)
-			if (!source && pkg.name !== def.label) failedFetch.push(pkg.name)
-			return source
+	const installed = (
+		await Promise.all(
+			rawInstalled.map(async (pkg) => {
+				const source = await resolveInstalledPackage(root, pkg);
+				if (!source && pkg.name !== def.label) failedFetch.push(pkg.name);
+				return source;
+			}),
+		)
+	).filter((x): x is PackageSource => !!x);
+
+	const additional = rawAdditional
+		.map((input) => {
+			const source = resolveAdditionalPackage(input);
+			if (!source && input !== def.label) failedFetch.push(input);
+			return source;
 		})
-	)).filter((x): x is PackageSource => !!x)
+		.filter((x): x is PackageSource => !!x);
 
-	const additional = rawAdditional.map((input) => {
-		const source = resolveAdditionalPackage(input)
-		if (!source && input !== def.label) failedFetch.push(input)
-		return source
-	}).filter((x): x is PackageSource => !!x)
+	const uniqueAdditional = [
+		...new Map(additional.map((source) => [getId(source), source])).values(),
+	];
+	const overridden = new Set(uniqueAdditional.map(getId));
+	const uniqueInstalled = installed.filter(
+		(source) => !overridden.has(getId(source)),
+	);
 
-	const uniqueAdditional = [...new Map(additional.map((source) => [getId(source), source])).values()]
-	const overridden = new Set(uniqueAdditional.map(getId))
-	const uniqueInstalled = installed.filter((source) => !overridden.has(getId(source)))
-
-	const cacheKey = buildCacheKey(rawInstalled, rawAdditional, customFunctionPaths)
+	const cacheKey = buildCacheKey(
+		rawInstalled,
+		rawAdditional,
+		customFunctionPaths,
+	);
 	if (!force) {
-		const cached = await readMetadataCache<FunctionMetadata[]>(FunctionsStorageKey, cacheKey)
+		const cached = await readMetadataCache<FunctionMetadata[]>(
+			FunctionsStorageKey,
+			cacheKey,
+		);
 		if (cached) {
-			Logger.info(`Loaded cached metadata from ${cached.length} functions.`)
-			return cached
+			Logger.info(`Loaded cached metadata from ${cached.length} functions.`);
+			return cached;
 		}
 	}
 
-	let extensionFunctions: FunctionMetadata[] = []
-	let fetched = new Set()
-	let fetchMain = false
+	let extensionFunctions: FunctionMetadata[] = [];
+	let fetched = new Set();
+	let fetchMain = false;
 
 	for (const pkgSource of uniqueInstalled) {
-		const pkgName = pkgSource.label!
-		let handled = false
+		const pkgName = pkgSource.label!;
+		let handled = false;
 
 		try {
-			const localMetaUri = vscode.Uri.joinPath(root, "node_modules", pkgName, "metadata", "functions.json")
-			const data = await vscode.workspace.fs.readFile(localMetaUri)
-			const json = JSON.parse(new TextDecoder().decode(data)) as FunctionMetadata[]
+			const localMetaUri = vscode.Uri.joinPath(
+				root,
+				"node_modules",
+				pkgName,
+				"metadata",
+				"functions.json",
+			);
+			const data = await vscode.workspace.fs.readFile(localMetaUri);
+			const json = JSON.parse(
+				new TextDecoder().decode(data),
+			) as FunctionMetadata[];
 
-			extensionFunctions.push(...json.map((x) => ({ ...x, source: pkgSource })))
-			fetched.add(pkgName)
-			handled = true
-		} catch { }
+			extensionFunctions.push(
+				...json.map((x) => ({ ...x, source: pkgSource })),
+			);
+			fetched.add(pkgName);
+			handled = true;
+		} catch {}
 
 		if (!handled) {
-			const data = await fetchMetadata(pkgSource)
+			const data = await fetchMetadata(pkgSource);
 			if (data) {
-				extensionFunctions.push(...data)
-				fetched.add(pkgName)
+				extensionFunctions.push(...data);
+				fetched.add(pkgName);
 			} else {
-				if (pkgName !== def.label) failedFetch.push(pkgName)
-				else fetchMain = true
+				if (pkgName !== def.label) failedFetch.push(pkgName);
+				else fetchMain = true;
 			}
 		}
 	}
 
 	for (const source of uniqueAdditional) {
-		const data = await fetchMetadata(source)
+		const data = await fetchMetadata(source);
 		if (data) {
-			extensionFunctions.push(...data)
-			fetched.add(source.label)
+			extensionFunctions.push(...data);
+			fetched.add(source.label);
 		} else {
-			if (getId(source) !== getId(def)) failedFetch.push(source.label)
-			else fetchMain = true
+			if (getId(source) !== getId(def)) failedFetch.push(source.label);
+			else fetchMain = true;
 		}
 	}
 
-	const hasDefaultInstalled = uniqueInstalled.some((x) => getId(x) === getId(def))
-	const hasDefaultAdditional = uniqueAdditional.some((x) => getId(x) === getId(def))
+	const hasDefaultInstalled = uniqueInstalled.some(
+		(x) => getId(x) === getId(def),
+	);
+	const hasDefaultAdditional = uniqueAdditional.some(
+		(x) => getId(x) === getId(def),
+	);
 
-	let main: FunctionMetadata[] = []
+	let main: FunctionMetadata[] = [];
 	if ((!hasDefaultInstalled && !hasDefaultAdditional) || fetchMain) {
-		const data = await fetchMetadata(def)
+		const data = await fetchMetadata(def);
 		if (data) {
-			main = data
-			fetched.add(def.label)
-		}
-		else failedFetch.unshift(def.label)
+			main = data;
+			fetched.add(def.label);
+		} else failedFetch.unshift(def.label);
 	}
 
-	const customFunctions = await loadCustomFunctions(customFunctionPaths)
-	const metadata = [...main, ...extensionFunctions]
+	const customFunctions = await loadCustomFunctions(customFunctionPaths);
+	const metadata = [...main, ...extensionFunctions];
 
-	failedFetch = [...new Set(failedFetch)]
-	const failed = failedFetch.length
-	const count = fetched.size
+	failedFetch = [...new Set(failedFetch)];
+	const failed = failedFetch.length;
+	const count = fetched.size;
 
-	Logger.info(`Fetched metadata from ${metadata.length} functions across ${count} package${count === 1 ? "" : "s"}. (${Array.from(fetched).join(", ")})`)
-	if (customFunctionPaths.length) Logger.info(`Fetched metadata from ${customFunctions.length} custom function${customFunctions.length === 1 ? "" : "s"}.`)
+	Logger.info(
+		`Fetched metadata from ${metadata.length} functions across ${count} package${count === 1 ? "" : "s"}. (${Array.from(fetched).join(", ")})`,
+	);
+	if (customFunctionPaths.length)
+		Logger.info(
+			`Fetched metadata from ${customFunctions.length} custom function${customFunctions.length === 1 ? "" : "s"}.`,
+		);
 	if (failed) {
-		const text = `Fetching metadata failed for following ${failed} package${failed === 1 ? "" : "s"}: ` + failedFetch.join(", ")
-		Logger.error(text)
-		vscode.window.showErrorMessage(text)
+		const text =
+			`Fetching metadata failed for following ${failed} package${failed === 1 ? "" : "s"}: ` +
+			failedFetch.join(", ");
+		Logger.error(text);
+		vscode.window.showErrorMessage(text);
 	}
-	const merged = overwriteNative(metadata, customFunctions as FunctionMetadata[])
+	const merged = overwriteNative(
+		metadata,
+		customFunctions as FunctionMetadata[],
+	);
 
-	await writeMetadataCache(FunctionsStorageKey, cacheKey, merged)
-	return merged
+	await writeMetadataCache(FunctionsStorageKey, cacheKey, merged);
+	return merged;
 }
 
 /**
  * Returns all cached functions.
  * @param force Whether to force fetching.
- * @returns 
+ * @returns
  */
 export async function getFunctions(force: boolean = false) {
-	if (functions && !force) return functions
+	if (functions && !force) return functions;
 
 	if (!functionsPromise) {
 		functionsPromise = (async () => {
-			const res = await fetchFunctions(force)
-			functions = res
-			return res
+			const res = await fetchFunctions(force);
+			functions = res;
+			return res;
 		})().finally(() => {
-			functionsPromise = null
-		})
+			functionsPromise = null;
+		});
 	}
 
-	return functionsPromise
+	return functionsPromise;
 }
 
 /**
@@ -773,37 +920,41 @@ export async function getFunctions(force: boolean = false) {
  * @param force Whether to force fetching.
  */
 export async function fetchGuides(force: boolean = false) {
-	const key = "default"
+	const key = "default";
 
 	if (!force) {
-		const cached = await readMetadataCache<GuideMetadata[]>(GuidesStorageKey, key)
+		const cached = await readMetadataCache<GuideMetadata[]>(
+			GuidesStorageKey,
+			key,
+		);
 		if (cached) {
-			Logger.info(`Loaded cached metadata from ${cached.length} guides.`)
-			return cached
+			Logger.info(`Loaded cached metadata from ${cached.length} guides.`);
+			return cached;
 		}
 	}
 
-	const url = "https://raw.githubusercontent.com/tryforge/ForgeVSC/refs/heads/metadata/guides.json"
+	const url =
+		"https://raw.githubusercontent.com/tryforge/ForgeVSC/refs/heads/metadata/guides.json";
 	const res = await fetch(url).catch((err) => {
-		const text = "Fetching guides failed: " + err
-		Logger.error(text)
-		vscode.window.showErrorMessage(text)
-		return undefined
-	})
-	if (!res) return []
+		const text = "Fetching guides failed: " + err;
+		Logger.error(text);
+		vscode.window.showErrorMessage(text);
+		return undefined;
+	});
+	if (!res) return [];
 
 	if (!res.ok) {
-		const text = `Fetching guides failed: ${res.status} ${res.statusText}`
-		Logger.error(text)
-		vscode.window.showErrorMessage(text)
-		return []
+		const text = `Fetching guides failed: ${res.status} ${res.statusText}`;
+		Logger.error(text);
+		vscode.window.showErrorMessage(text);
+		return [];
 	}
 
-	const data = await res.json() as GuideMetadata[]
-	Logger.info(`Fetched metadata from ${data.length} guides.`)
+	const data = (await res.json()) as GuideMetadata[];
+	Logger.info(`Fetched metadata from ${data.length} guides.`);
 
-	await writeMetadataCache<GuideMetadata[]>(GuidesStorageKey, key, data)
-	return data
+	await writeMetadataCache<GuideMetadata[]>(GuidesStorageKey, key, data);
+	return data;
 }
 
 /**
@@ -811,51 +962,51 @@ export async function fetchGuides(force: boolean = false) {
  * @param force Whether to force fetching.
  */
 export async function getGuides(force: boolean = false) {
-	if (guides && !force) return guides
+	if (guides && !force) return guides;
 
 	if (!guidesPromise) {
 		guidesPromise = (async () => {
-			const res = await fetchGuides(force)
-			guides = res
-			return res
+			const res = await fetchGuides(force);
+			guides = res;
+			return res;
 		})().finally(() => {
-			guidesPromise = null
-		})
+			guidesPromise = null;
+		});
 	}
 
-	return guidesPromise
+	return guidesPromise;
 }
 
 /**
  * Returns all runtime cached paths.
  * @param source The package source.
- * @returns 
+ * @returns
  */
 export async function getPaths(source: PackageSource) {
-	const { repo, branch } = source
-	const key = `${repo}#${branch}`
+	const { repo, branch } = source;
+	const key = `${repo}#${branch}`;
 
-	const cached = paths.get(key)
-	if (cached) return cached
+	const cached = paths.get(key);
+	if (cached) return cached;
 
-	const pending = pathsPromise.get(key)
-	if (pending) return pending
+	const pending = pathsPromise.get(key);
+	if (pending) return pending;
 
 	const promise = (async () => {
-		const url = `https://raw.githubusercontent.com/${repo}/${branch}/metadata/paths.json`
-		const res = await fetch(url).catch(() => undefined)
-		if (!res?.ok) return null
+		const url = `https://raw.githubusercontent.com/${repo}/${branch}/metadata/paths.json`;
+		const res = await fetch(url).catch(() => undefined);
+		if (!res?.ok) return null;
 
-		const data = await res.json() as PathMetadata
-		paths.set(key, data)
-		return data
-	})()
-	pathsPromise.set(key, promise)
+		const data = (await res.json()) as PathMetadata;
+		paths.set(key, data);
+		return data;
+	})();
+	pathsPromise.set(key, promise);
 
 	try {
-		return await promise
+		return await promise;
 	} finally {
-		pathsPromise.delete(key)
+		pathsPromise.delete(key);
 	}
 }
 
@@ -863,41 +1014,44 @@ export async function getPaths(source: PackageSource) {
  * Locates the code block and returns relevant data.
  * @param document The text document.
  * @param position The current position of the cursor.
- * @returns 
+ * @returns
  */
-export function locateCodeBlock(document: vscode.TextDocument, position: vscode.Position) {
-	const text = document.getText()
-	const offset = document.offsetAt(position)
+export function locateCodeBlock(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+) {
+	const text = document.getText();
+	const offset = document.offsetAt(position);
 
-	const CodeRegex = /code:\s*(["`'])/g
-	let match: RegExpExecArray | null
+	const CodeRegex = /code:\s*(["`'])/g;
+	let match: RegExpExecArray | null;
 
 	while ((match = CodeRegex.exec(text)) !== null) {
-		const quoteChar = match[1]
-		const start = CodeRegex.lastIndex
+		const quoteChar = match[1];
+		const start = CodeRegex.lastIndex;
 
 		if (isInsideComment(text, match.index)) {
-			CodeRegex.lastIndex = start
-			continue
+			CodeRegex.lastIndex = start;
+			continue;
 		}
 
-		let end = -1
+		let end = -1;
 		for (let i = start; i < text.length; i++) {
-			if (text[i] !== quoteChar || isEscaped(text, i, true)) continue
-			end = i
-			break
+			if (text[i] !== quoteChar || isEscaped(text, i, true)) continue;
+			end = i;
+			break;
 		}
-		if (end === -1) continue
+		if (end === -1) continue;
 
 		if (offset >= start && offset <= end) {
-			const slice = text.slice(start, offset)
-			return { start, end, quoteChar, slice }
+			const slice = text.slice(start, offset);
+			return { start, end, quoteChar, slice };
 		}
 
-		CodeRegex.lastIndex = end + 1
+		CodeRegex.lastIndex = end + 1;
 	}
 
-	return null
+	return null;
 }
 
 /**
@@ -906,33 +1060,39 @@ export function locateCodeBlock(document: vscode.TextDocument, position: vscode.
  * @param withTypes Whether to include types for arguments.
  * @returns
  */
-export function generateUsage(fn: FunctionMetadata, withTypes: boolean = false) {
-	const args = fn.args
+export function generateUsage(
+	fn: FunctionMetadata,
+	withTypes: boolean = false,
+) {
+	const args = fn.args;
 	const usage = args?.length
-		? `[${args.map((arg) =>
-			`${arg.rest ? "..." : ""}${arg.name}${arg.required ? "" : "?"}${withTypes ? `: ${arg.type}` : ""}`
-		).join(";")}]`
-		: ""
+		? `[${args
+				.map(
+					(arg) =>
+						`${arg.rest ? "..." : ""}${arg.name}${arg.required ? "" : "?"}${withTypes ? `: ${arg.type}` : ""}`,
+				)
+				.join(";")}]`
+		: "";
 
-	return fn.name + usage
+	return fn.name + usage;
 }
 
 /**
  * Builds the source URL for functions.
  * @param fn The function metadata.
- * @returns 
+ * @returns
  */
 export async function buildSourceURL(fn: FunctionMetadata) {
-	const { source, category } = fn
-	if (!source) return null
+	const { source, category } = fn;
+	if (!source) return null;
 
-	const { repo, branch } = source
-	let path = "src/native"
+	const { repo, branch } = source;
+	let path = "src/native";
 
-	const paths = await getPaths(source)
-	if (paths) path = paths.functions
+	const paths = await getPaths(source);
+	if (paths) path = paths.functions;
 
-	return `https://github.com/${repo}/blob/${branch}/${path}${category ? `/${category}` : ""}/${fn.name.replace("$", "")}.ts`
+	return `https://github.com/${repo}/blob/${branch}/${path}${category ? `/${category}` : ""}/${fn.name.replace("$", "")}.ts`;
 }
 
 /**
@@ -941,54 +1101,57 @@ export async function buildSourceURL(fn: FunctionMetadata) {
  * @param loose Whether to extract loosely.
  */
 export async function findFunction(name: string, loose: boolean = false) {
-	const match = name.match(loose ? LooseFunctionNameRegex : FunctionNameRegex)
-	if (!match) return null
+	const match = name.match(loose ? LooseFunctionNameRegex : FunctionNameRegex);
+	if (!match) return null;
 
-	const prefix = name.match(FunctionPrefixRegex)?.[0] ?? "$"
-	const typed = match[1].toLowerCase()
-	const strict = name.trimEnd().endsWith("[")
+	const prefix = name.match(FunctionPrefixRegex)?.[0] ?? "$";
+	const typed = match[1].toLowerCase();
+	const strict = name.trimEnd().endsWith("[");
 
-	const all = await getFunctions()
-	const findFn = (fnName: string) => all.find((x) =>
-		x.name.toLowerCase() === fnName || (x.aliases ?? []).some((a) => a.toLowerCase() === fnName)
-	)
+	const all = await getFunctions();
+	const findFn = (fnName: string) =>
+		all.find(
+			(x) =>
+				x.name.toLowerCase() === fnName ||
+				(x.aliases ?? []).some((a) => a.toLowerCase() === fnName),
+		);
 
 	if (strict) {
-		const fnName = `$${typed}`
-		const fn = findFn(fnName)
-		if (!fn) return null
-		return { fn, matchedText: prefix + typed }
+		const fnName = `$${typed}`;
+		const fn = findFn(fnName);
+		if (!fn) return null;
+		return { fn, matchedText: prefix + typed };
 	}
 
 	for (let len = typed.length; len > 0; len--) {
-		const raw = typed.slice(0, len)
-		const fnName = `$${raw}`
-		const fn = findFn(fnName)
-		if (fn) return { fn, matchedText: prefix + raw }
+		const raw = typed.slice(0, len);
+		const fnName = `$${raw}`;
+		const fn = findFn(fnName);
+		if (fn) return { fn, matchedText: prefix + raw };
 	}
 
-	return null
+	return null;
 }
 
 /**
  * Validates the operator prefix order from the input.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 export function validateOperatorPrefix(input: string) {
-	const rawPrefix = input.match(LooseFunctionPrefixRegex)?.[0] ?? "$"
-	const normalizedPrefix = rawPrefix.replace(/@\[[^\]]*\]/g, "@[]")
-	const isInvalidOrder = InvalidOperatorRegex.test(normalizedPrefix)
+	const rawPrefix = input.match(LooseFunctionPrefixRegex)?.[0] ?? "$";
+	const normalizedPrefix = rawPrefix.replace(/@\[[^\]]*\]/g, "@[]");
+	const isInvalidOrder = InvalidOperatorRegex.test(normalizedPrefix);
 
-	return { rawPrefix, normalizedPrefix, isInvalidOrder }
+	return { rawPrefix, normalizedPrefix, isInvalidOrder };
 }
 
 /**
  * Clones an existing regex.
- * @returns 
+ * @returns
  */
 export function cloneRegex(regex: RegExp) {
-	return new RegExp(regex.source, regex.flags)
+	return new RegExp(regex.source, regex.flags);
 }
 
 /**
@@ -997,231 +1160,239 @@ export function cloneRegex(regex: RegExp) {
  * @param i The index number.
  * @param single Whether the input is escaped using a single backslash.
  * @param minIndex The minimum index.
- * @returns 
+ * @returns
  */
-export function isEscaped(input: string, i: number, single: boolean = false, minIndex: number = 0) {
-	let slashes = 0
-	for (let j = i - 1; j >= minIndex && input[j] === "\\"; j--) slashes++
-	return single ? (slashes % 2 === 1) : (slashes >= 2 && slashes % 2 === 0)
+export function isEscaped(
+	input: string,
+	i: number,
+	single: boolean = false,
+	minIndex: number = 0,
+) {
+	let slashes = 0;
+	for (let j = i - 1; j >= minIndex && input[j] === "\\"; j--) slashes++;
+	return single ? slashes % 2 === 1 : slashes >= 2 && slashes % 2 === 0;
 }
 
 /**
  * Checks whether the input is inside an ignored instance.
  * @param input The input text.
  * @param index The index number.
- * @returns 
+ * @returns
  */
 export function isIgnored(text: string, index: number) {
-	const regex = new RegExp(String.raw`\$${OperatorChain}(?:c|escapeCode|esc)\[`, "gi")
-	let match: RegExpExecArray | null
+	const regex = new RegExp(
+		String.raw`\$${OperatorChain}(?:c|escapeCode|esc)\[`,
+		"gi",
+	);
+	let match: RegExpExecArray | null;
 
 	while ((match = regex.exec(text))) {
-		const start = match.index
-		if (isEscaped(text, start)) continue
+		const start = match.index;
+		if (isEscaped(text, start)) continue;
 
-		const openBracket = start + match[0].length - 1
-		const closeBracket = findMatchingBracket(text, openBracket)
-		if (closeBracket === -1) continue
+		const openBracket = start + match[0].length - 1;
+		const closeBracket = findMatchingBracket(text, openBracket);
+		if (closeBracket === -1) continue;
 
 		if (index > start && index < closeBracket) {
-			return true
+			return true;
 		}
 	}
 
-	return false
+	return false;
 }
 
 /**
  * Checks whether the input is inside a JavaScript comment.
  * @param input The input text.
  * @param index The index number.
- * @returns 
+ * @returns
  */
 export function isInsideComment(input: string, index: number) {
 	// Line comments (//)
-	const lineStart = input.lastIndexOf("\n", index) + 1
-	const line = input.slice(lineStart, index)
-	const lineComment = line.indexOf("//")
-	if (lineComment !== -1) return true
+	const lineStart = input.lastIndexOf("\n", index) + 1;
+	const line = input.slice(lineStart, index);
+	const lineComment = line.indexOf("//");
+	if (lineComment !== -1) return true;
 
 	// Block comments (/* */)
-	const before = input.slice(0, index)
-	const open = before.lastIndexOf("/*")
-	const close = before.lastIndexOf("*/")
+	const before = input.slice(0, index);
+	const open = before.lastIndexOf("/*");
+	const close = before.lastIndexOf("*/");
 
-	return open !== -1 && open > close
+	return open !== -1 && open > close;
 }
 
 /**
  * Checks whether the input is an opening function bracket.
  * @param input The input text.
  * @param bracketIndex The bracket index.
- * @returns 
+ * @returns
  */
 export function isOpeningBracket(input: string, bracketIndex: number) {
-	if (bracketIndex <= 0) return false
+	if (bracketIndex <= 0) return false;
 
-	const prev = input[bracketIndex - 1]
-	if (/\s/.test(prev)) return false
+	const prev = input[bracketIndex - 1];
+	if (/\s/.test(prev)) return false;
 
-	const before = input.slice(0, bracketIndex)
-	return new RegExp(FunctionRegex.source + "$").test(before)
+	const before = input.slice(0, bracketIndex);
+	return new RegExp(FunctionRegex.source + "$").test(before);
 }
 
 /**
  * Finds the opening bracket position from the input text.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 export function findOpeningBracket(input: string) {
-	let depth = 0
+	let depth = 0;
 
 	for (let i = input.length - 1; i >= 0; i--) {
-		const c = input[i]
+		const c = input[i];
 
 		if (c === "]" && !isEscaped(input, i)) {
-			depth++
-			continue
+			depth++;
+			continue;
 		}
 
 		if (c === "[") {
-			if (!isOpeningBracket(input, i)) continue
-			if (depth > 0) depth--
-			else return i
+			if (!isOpeningBracket(input, i)) continue;
+			if (depth > 0) depth--;
+			else return i;
 		}
 	}
 
-	return -1
+	return -1;
 }
 
 /**
  * Finds the matching bracket position from the start index.
  * @param input The input text.
  * @param openIndex The index of the opening bracket.
- * @returns 
+ * @returns
  */
 export function findMatchingBracket(input: string, openIndex: number) {
-	let depth = 1
+	let depth = 1;
 
 	for (let i = openIndex + 1; i < input.length; i++) {
-		const c = input[i]
+		const c = input[i];
 
 		if (c === "[" && isOpeningBracket(input, i)) {
-			depth++
-			continue
+			depth++;
+			continue;
 		}
 
 		if (c === "]" && !isEscaped(input, i)) {
-			depth--
-			if (depth === 0) return i
+			depth--;
+			if (depth === 0) return i;
 		}
 	}
 
-	return -1
+	return -1;
 }
 
 /**
  * Finds the first matching condition operator from the input text.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 export function findConditionOperator(input: string) {
-	let depth = 0
+	let depth = 0;
 
 	for (let i = 0; i < input.length; i++) {
-		const ch = input[i]
+		const ch = input[i];
 
 		if (ch === "[" && isOpeningBracket(input, i)) {
-			depth++
-			continue
+			depth++;
+			continue;
 		}
 
 		if (ch === "]" && depth > 0 && !isEscaped(input, i)) {
-			depth--
-			continue
+			depth--;
+			continue;
 		}
 
-		if (depth > 0) continue
+		if (depth > 0) continue;
 
-		const one = ch
-		const two = one + (input[i + 1] ?? "")
+		const one = ch;
+		const two = one + (input[i + 1] ?? "");
 
 		if (["==", "!=", "<=", ">="].includes(two)) {
 			return {
 				operator: two as OperatorType,
 				start: i,
-				end: i + 2
-			}
+				end: i + 2,
+			};
 		}
 
 		if (one === "<" || one === ">") {
 			return {
 				operator: one as OperatorType,
 				start: i,
-				end: i + 1
-			}
+				end: i + 1,
+			};
 		}
 	}
 
-	return null
+	return null;
 }
 
 /**
  * Splits an argument string into an array of arguments.
  * @param argString The argument string.
- * @returns 
+ * @returns
  */
 export function splitArgs(argString?: string) {
-	if (argString === undefined) return []
+	if (argString === undefined) return [];
 
-	const args: ParsedArg[] = []
-	let current = ""
-	let depth = 0
-	let argStart = 0
+	const args: ParsedArg[] = [];
+	let current = "";
+	let depth = 0;
+	let argStart = 0;
 
 	for (let i = 0; i < argString.length; i++) {
-		const escaped = isEscaped(argString, i)
-		const char = argString[i]
+		const escaped = isEscaped(argString, i);
+		const char = argString[i];
 
-		if (char === "[" && isOpeningBracket(argString, i)) depth++
-		else if (char === "]" && depth > 0 && !escaped) depth--
+		if (char === "[" && isOpeningBracket(argString, i)) depth++;
+		else if (char === "]" && depth > 0 && !escaped) depth--;
 
 		if (char === ";" && depth === 0 && !escaped) {
 			args.push({
 				value: current,
 				start: argStart,
-				end: i
-			})
+				end: i,
+			});
 
-			current = ""
-			argStart = i + 1
-		} else current += char
+			current = "";
+			argStart = i + 1;
+		} else current += char;
 	}
 
 	args.push({
 		value: current,
 		start: argStart,
-		end: argString.length
-	})
+		end: argString.length,
+	});
 
-	return args
+	return args;
 }
 
 /**
  * Returns the depth of function brackets.
  * @param input The input text.
- * @returns 
+ * @returns
  */
 export function bracketDepth(input: string) {
-	let depth = 0
+	let depth = 0;
 
 	for (let i = 0; i < input.length; i++) {
-		const c = input[i]
-		if (c === "[" && isOpeningBracket(input, i)) depth++
-		else if (c === "]" && depth > 0 && !isEscaped(input, i)) depth--
+		const c = input[i];
+		if (c === "[" && isOpeningBracket(input, i)) depth++;
+		else if (c === "]" && depth > 0 && !isEscaped(input, i)) depth--;
 	}
 
-	return depth
+	return depth;
 }
 
 /**
@@ -1229,6 +1400,6 @@ export function bracketDepth(input: string) {
  * @param ctx The extension context.
  */
 export async function deactivate() {
-	await disconnectRPC()
-	Logger.info("Deactivated extension.")
+	await disconnectRPC();
+	Logger.info("Deactivated extension.");
 }

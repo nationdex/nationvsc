@@ -1,86 +1,86 @@
 {
-  "scopeName": "forge.inject",
-  "injectionSelector": "L:source.js -comment, L:source.ts -comment, L:source.jsx -comment, L:source.tsx -comment",
-  "patterns": [{ "include": "#code-property-string" }],
-  "repository": {
-    "code-property-string": {
-      "begin": "\\bcode\\b\\s*:\\s*([\"`'])",
-      "beginCaptures": {
-        "0": { "name": "meta.forge.code.begin" }
-      },
-      "end": "(?<!\\\\)\\1",
-      "endCaptures": {
-        "0": { "name": "meta.forge.code.end" }
-      },
-      "patterns": [
-        { "include": "#forge-comment" },
-        { "include": "#djs-eval" },
-        { "include": "#forge-brackets" }
-      ]
-    },
+	"scopeName": "forge.inject",
+	"injectionSelector": "L:source.js -comment, L:source.ts -comment, L:source.jsx -comment, L:source.tsx -comment",
+	"patterns": [{ "include": "#code-property-string" }],
+	"repository": {
+		"code-property-string": {
+			"begin": "\\bcode\\b\\s*:\\s*([\"`'])",
+			"beginCaptures": {
+				"0": { "name": "meta.forge.code.begin" }
+			},
+			"end": "(?<!\\\\)\\1",
+			"endCaptures": {
+				"0": { "name": "meta.forge.code.end" }
+			},
+			"patterns": [
+				{ "include": "#forge-comment" },
+				{ "include": "#djs-eval" },
+				{ "include": "#forge-brackets" }
+			]
+		},
 
-    "forge-comment": {
-      "name": "comment.block.forge",
-      "begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?[cC](\\[)",
-      "beginCaptures": {
-        "1": { "name": "punctuation.definition.comment.forge" },
-        "2": { "name": "punctuation.definition.comment.forge" }
-      },
-      "end": "(?<!\\\\\\\\)\\]",
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.comment.forge" }
-      },
-      "patterns": [
-        { "include": "#forge-comment" },
-        { "include": "#comment-brackets" }
-      ]
-    },
+		"forge-comment": {
+			"name": "comment.block.forge",
+			"begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?[cC](\\[)",
+			"beginCaptures": {
+				"1": { "name": "punctuation.definition.comment.forge" },
+				"2": { "name": "punctuation.definition.comment.forge" }
+			},
+			"end": "(?<!\\\\\\\\)\\]",
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.comment.forge" }
+			},
+			"patterns": [
+				{ "include": "#forge-comment" },
+				{ "include": "#comment-brackets" }
+			]
+		},
 
-    "comment-brackets": {
-      "name": "comment.block.forge",
-      "begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?[a-zA-Z0-9]+\\[",
-      "end": "(?<!\\\\)\\]",
-      "patterns": [{ "include": "#comment-brackets" }]
-    },
+		"comment-brackets": {
+			"name": "comment.block.forge",
+			"begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?[a-zA-Z0-9]+\\[",
+			"end": "(?<!\\\\)\\]",
+			"patterns": [{ "include": "#comment-brackets" }]
+		},
 
-    "djs-eval": {
-      "name": "meta.function.djsEval.forge",
-      "begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?(?i:(djsEval|js))(\\[)",
-      "beginCaptures": {
-        "1": { "name": "entity.name.function.forge" },
-        "2": { "name": "punctuation.section.brackets.begin.forge" }
-      },
-      "end": "(?<!\\\\\\\\)\\]",
-      "endCaptures": {
-        "1": { "name": "punctuation.section.brackets.end.forge" }
-      },
-      "patterns": [
-        { "include": "#forge-comment" },
-        { "include": "#djs-eval" },
-        { "include": "#forge-brackets" },
-        { "include": "source.js" }
-      ]
-    },
+		"djs-eval": {
+			"name": "meta.function.djsEval.forge",
+			"begin": "(?<!\\\\)\\$(?:!?#?(?:@\\[[^\\]\\n]?\\])?)?(?i:(djsEval|js))(\\[)",
+			"beginCaptures": {
+				"1": { "name": "entity.name.function.forge" },
+				"2": { "name": "punctuation.section.brackets.begin.forge" }
+			},
+			"end": "(?<!\\\\\\\\)\\]",
+			"endCaptures": {
+				"1": { "name": "punctuation.section.brackets.end.forge" }
+			},
+			"patterns": [
+				{ "include": "#forge-comment" },
+				{ "include": "#djs-eval" },
+				{ "include": "#forge-brackets" },
+				{ "include": "source.js" }
+			]
+		},
 
-    "forge-brackets": {
-      "patterns": [
-        {
-          "name": "meta.function-call.forge",
-          "begin": "(?<!\\\\)\\$(?:\\$!?#?(?:@\\[[^\\]\\n]?\\])?)?[a-zA-Z0-9]+(\\[)",
-          "beginCaptures": {
-            "1": { "name": "punctuation.section.brackets.begin.forge" }
-          },
-          "end": "(?<!\\\\\\\\)\\]",
-          "endCaptures": {
-            "1": { "name": "punctuation.section.brackets.end.forge" }
-          },
-          "patterns": [
-            { "include": "#forge-comment" },
-            { "include": "#djs-eval" },
-            { "include": "#forge-brackets" }
-          ]
-        }
-      ]
-    }
-  }
+		"forge-brackets": {
+			"patterns": [
+				{
+					"name": "meta.function-call.forge",
+					"begin": "(?<!\\\\)\\$(?:\\$!?#?(?:@\\[[^\\]\\n]?\\])?)?[a-zA-Z0-9]+(\\[)",
+					"beginCaptures": {
+						"1": { "name": "punctuation.section.brackets.begin.forge" }
+					},
+					"end": "(?<!\\\\\\\\)\\]",
+					"endCaptures": {
+						"1": { "name": "punctuation.section.brackets.end.forge" }
+					},
+					"patterns": [
+						{ "include": "#forge-comment" },
+						{ "include": "#djs-eval" },
+						{ "include": "#forge-brackets" }
+					]
+				}
+			]
+		}
+	}
 }

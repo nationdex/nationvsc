@@ -1,406 +1,411 @@
 {
-  "name": "forgevsc",
-  "displayName": "ForgeVSC",
-  "description": "%extension.description%",
-  "publisher": "tryforge",
-  "version": "1.2.8",
-  "icon": "./assets/ForgeScript.png",
-  "main": "./out/extension.js",
-  "browser": "./out/web/extension.js",
-  "l10n": "./translations",
-  "author": {
-    "name": "xNickyDev"
-  },
-  "engines": {
-    "vscode": "^1.105.0"
-  },
-  "categories": [
-    "Programming Languages",
-    "Visualization",
-    "Other"
-  ],
-  "extensionKind": [
-    "workspace"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tryforge/ForgeVSC.git"
-  },
-  "license": "LGPL-3.0-or-later",
-  "activationEvents": [
-    "onLanguage:javascript",
-    "onLanguage:typescript",
-    "onLanguage:javascriptreact",
-    "onLanguage:typescriptreact",
-    "workspaceContains:.forgevsc.json",
-    "workspaceContains:.vscode/.forgevsc.json"
-  ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "forge",
-        "aliases": [
-          "Forge",
-          "ForgeScript",
-          "forgescript"
-        ],
-        "extensions": [
-          ".fs"
-        ],
-        "configuration": "./language-configuration.json",
-        "icon": {
-          "dark": "./assets/ForgeScript.png",
-          "light": "./assets/ForgeScript.png"
-        }
-      }
-    ],
-    "commands": [
-      {
-        "command": "forgevsc.createConfig",
-        "title": "%command.createConfig.title%",
-        "category": "ForgeVSC"
-      },
-      {
-        "command": "forgevsc.reloadFunctionMetadata",
-        "title": "%command.reloadFunctionMetadata.title%",
-        "category": "ForgeVSC",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "forgevsc.searchGuides",
-        "title": "%command.searchGuides.title%",
-        "category": "ForgeVSC",
-        "icon": "$(search)"
-      },
-      {
-        "command": "forgevsc.reloadGuideMetadata",
-        "title": "%command.reloadGuideMetadata.title%",
-        "category": "ForgeVSC",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "forgevsc.openGuide",
-        "title": "%command.openGuide.title%",
-        "category": "ForgeVSC"
-      },
-      {
-        "command": "forgevsc.previewGuide",
-        "title": "%command.previewGuide.title%",
-        "category": "ForgeVSC"
-      },
-      {
-        "command": "forgevsc.favoriteGuide",
-        "title": "%command.favoriteGuide.title%",
-        "category": "ForgeVSC",
-        "icon": "$(star-empty)"
-      },
-      {
-        "command": "forgevsc.unfavoriteGuide",
-        "title": "%command.unfavoriteGuide.title%",
-        "category": "ForgeVSC",
-        "icon": "$(star-full)"
-      },
-      {
-        "command": "forgevsc.createGuide",
-        "title": "%command.createGuide.title%",
-        "category": "ForgeVSC",
-        "icon": "$(add)"
-      },
-      {
-        "command": "forgevsc.openGuideExternal",
-        "title": "%command.openGuideExternal.title%",
-        "category": "ForgeVSC",
-        "icon": "$(link-external)"
-      },
-      {
-        "command": "forgevsc.openExtensionSettings",
-        "title": "%command.openExtensionSettings.title%",
-        "category": "ForgeVSC",
-        "icon": "$(settings)"
-      }
-    ],
-    "grammars": [
-      {
-        "scopeName": "forge.inject",
-        "path": "./syntaxes/forge.tmLanguage.json",
-        "injectTo": [
-          "source.js",
-          "source.ts",
-          "source.jsx",
-          "source.tsx"
-        ]
-      }
-    ],
-    "jsonValidation": [
-      {
-        "fileMatch": [
-          ".forgevsc.json",
-          ".vscode/.forgevsc.json"
-        ],
-        "url": "./forgevsc.schema.json"
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "forge",
-          "title": "%view.guides.title%",
-          "icon": "$(book)"
-        }
-      ]
-    },
-    "viewsWelcome": [
-      {
-        "view": "forge.guidesView",
-        "contents": "%view.guides.welcome%"
-      }
-    ],
-    "views": {
-      "forge": [
-        {
-          "id": "forge.guidesView",
-          "name": "%view.guides.title%",
-          "icon": "$(book)"
-        }
-      ]
-    },
-    "menus": {
-      "view/title": [
-        {
-          "command": "forgevsc.createGuide",
-          "when": "view == forge.guidesView",
-          "group": "navigation@0"
-        },
-        {
-          "command": "forgevsc.searchGuides",
-          "when": "view == forge.guidesView",
-          "group": "navigation@1"
-        },
-        {
-          "command": "forgevsc.reloadGuideMetadata",
-          "when": "view == forge.guidesView",
-          "group": "navigation@2"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "forgevsc.favoriteGuide",
-          "when": "view == forge.guidesView && viewItem == guide",
-          "group": "inline"
-        },
-        {
-          "command": "forgevsc.unfavoriteGuide",
-          "when": "view == forge.guidesView && viewItem == guide.favorite",
-          "group": "inline"
-        },
-        {
-          "command": "forgevsc.openGuideExternal",
-          "when": "view == forge.guidesView && viewItem == guide || view == forge.guidesView && viewItem == guide.favorite",
-          "group": "inline@2"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "forgevsc.openGuide",
-          "when": "false"
-        },
-        {
-          "command": "forgevsc.previewGuide",
-          "when": "false"
-        },
-        {
-          "command": "forgevsc.favoriteGuide",
-          "when": "false"
-        },
-        {
-          "command": "forgevsc.unfavoriteGuide",
-          "when": "false"
-        },
-        {
-          "command": "forgevsc.openGuideExternal",
-          "when": "false"
-        }
-      ]
-    },
-    "configurationDefaults": {
-      "editor.quickSuggestions": {
-        "other": true,
-        "comments": false,
-        "strings": true
-      },
-      "editor.suggestOnTriggerCharacters": true
-    },
-    "configuration": {
-      "title": "ForgeVSC",
-      "properties": {
-        "forgevsc.global.enabledWorkspaces": {
-          "order": 0,
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "uniqueItems": true,
-          "scope": "machine",
-          "description": "%config.global.enabledWorkspaces.description%"
-        },
-        "forgevsc.workspace.additionalPackages": {
-          "order": 1,
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "description": "%config.workspace.additionalPackages.description%"
-        },
-        "forgevsc.workspace.customFunctionPaths": {
-          "order": 2,
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "uniqueItems": true,
-          "description": "%config.workspace.customFunctionPaths.description%"
-        },
-        "forgevsc.workspace.colors.function.name": {
-          "order": 10,
-          "type": "string",
-          "default": "#AC75FF",
-          "description": "%config.workspace.colors.function.name.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.function.name.patternError%"
-        },
-        "forgevsc.workspace.colors.function.dollar": {
-          "order": 11,
-          "type": "string",
-          "default": "#FE7CEB",
-          "description": "%config.workspace.colors.function.dollar.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.function.dollar.patternError%"
-        },
-        "forgevsc.workspace.colors.function.semicolon": {
-          "order": 12,
-          "type": "string",
-          "default": "#C586C0",
-          "description": "%config.workspace.colors.function.semicolon.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.function.semicolon.patternError%"
-        },
-        "forgevsc.workspace.colors.arguments.condition": {
-          "order": 13,
-          "type": "string",
-          "default": "#4FC1FF",
-          "description": "%config.workspace.colors.arguments.condition.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.arguments.condition.patternError%"
-        },
-        "forgevsc.workspace.colors.operators.negation": {
-          "order": 14,
-          "type": "string",
-          "default": "#4FA3FF",
-          "description": "%config.workspace.colors.operators.negation.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.operators.negation.patternError%"
-        },
-        "forgevsc.workspace.colors.operators.silent": {
-          "order": 15,
-          "type": "string",
-          "default": "#FF9F43",
-          "description": "%config.workspace.colors.operators.silent.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.operators.silent.patternError%"
-        },
-        "forgevsc.workspace.colors.operators.count": {
-          "order": 16,
-          "type": "string",
-          "default": "#33D17A",
-          "description": "%config.workspace.colors.operators.count.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.operators.count.patternError%"
-        },
-        "forgevsc.workspace.colors.operators.countDelimiter": {
-          "order": 17,
-          "type": "string",
-          "default": "#76E3A0",
-          "description": "%config.workspace.colors.operators.countDelimiter.description%",
-          "pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
-          "patternErrorMessage": "%config.workspace.colors.operators.countDelimiter.patternError%"
-        },
-        "forgevsc.workspace.features.folding": {
-          "order": 30,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.folding.description%"
-        },
-        "forgevsc.workspace.features.hoverInfo": {
-          "order": 31,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.hoverInfo.description%"
-        },
-        "forgevsc.workspace.features.suggestions": {
-          "order": 32,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.suggestions.description%"
-        },
-        "forgevsc.workspace.features.signatureHelp": {
-          "order": 33,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.signatureHelp.description%"
-        },
-        "forgevsc.workspace.features.diagnostics": {
-          "order": 34,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.diagnostics.description%"
-        },
-        "forgevsc.workspace.features.autocompletion": {
-          "order": 35,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.features.autocompletion.description%"
-        },
-        "forgevsc.workspace.rpc.enabled": {
-          "order": 50,
-          "type": "boolean",
-          "default": true,
-          "description": "%config.workspace.rpc.enabled.description%"
-        }
-      }
-    }
-  },
-  "scripts": {
-    "web": "npx vscode-test-web --extensionDevelopmentPath=. --port=3001",
-    "trans": "npx @vscode/l10n-dev export -o ./translations ./src",
-    "publish": "dotenv -- sh -c 'npm run package && npx ovsx publish -p $OVSX_PAT'",
-    "package": "npx @vscode/vsce package",
-    "vscode:prepublish": "npm run build",
-    "compile": "tsc -p ./",
-    "build:web": "node scripts/esbuild.mjs",
-    "build": "npm run compile && npm run build:web",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run build && npm run lint",
-    "lint": "eslint src"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^26.0.0",
-    "@types/vscode": "^1.105.0",
-    "@typescript-eslint/eslint-plugin": "^8.61.1",
-    "@typescript-eslint/parser": "^8.61.1",
-    "@vscode/l10n-dev": "^0.0.35",
-    "@vscode/test-web": "^0.0.81",
-    "@vscode/vsce": "^3.9.2",
-    "dotenv-cli": "^11.0.0",
-    "esbuild": "^0.28.1",
-    "eslint": "^10.5.0",
-    "ovsx": "^1.0.2"
-  },
-  "dependencies": {
-    "@xhayper/discord-rpc": "^1.3.4",
-    "typescript": "^6.0.3"
-  }
+	"name": "forgevsc",
+	"displayName": "ForgeVSC",
+	"description": "%extension.description%",
+	"publisher": "tryforge",
+	"version": "1.2.8",
+	"icon": "./assets/ForgeScript.png",
+	"main": "./out/extension.js",
+	"browser": "./out/web/extension.js",
+	"l10n": "./translations",
+	"author": {
+		"name": "xNickyDev"
+	},
+	"engines": {
+		"vscode": "^1.105.0"
+	},
+	"categories": [
+		"Programming Languages",
+		"Visualization",
+		"Other"
+	],
+	"extensionKind": [
+		"workspace"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tryforge/ForgeVSC.git"
+	},
+	"license": "LGPL-3.0-or-later",
+	"activationEvents": [
+		"onLanguage:javascript",
+		"onLanguage:typescript",
+		"onLanguage:javascriptreact",
+		"onLanguage:typescriptreact",
+		"workspaceContains:.forgevsc.json",
+		"workspaceContains:.vscode/.forgevsc.json"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "forge",
+				"aliases": [
+					"Forge",
+					"ForgeScript",
+					"forgescript"
+				],
+				"extensions": [
+					".fs"
+				],
+				"configuration": "./language-configuration.json",
+				"icon": {
+					"dark": "./assets/ForgeScript.png",
+					"light": "./assets/ForgeScript.png"
+				}
+			}
+		],
+		"commands": [
+			{
+				"command": "forgevsc.createConfig",
+				"title": "%command.createConfig.title%",
+				"category": "ForgeVSC"
+			},
+			{
+				"command": "forgevsc.reloadFunctionMetadata",
+				"title": "%command.reloadFunctionMetadata.title%",
+				"category": "ForgeVSC",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "forgevsc.searchGuides",
+				"title": "%command.searchGuides.title%",
+				"category": "ForgeVSC",
+				"icon": "$(search)"
+			},
+			{
+				"command": "forgevsc.reloadGuideMetadata",
+				"title": "%command.reloadGuideMetadata.title%",
+				"category": "ForgeVSC",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "forgevsc.openGuide",
+				"title": "%command.openGuide.title%",
+				"category": "ForgeVSC"
+			},
+			{
+				"command": "forgevsc.previewGuide",
+				"title": "%command.previewGuide.title%",
+				"category": "ForgeVSC"
+			},
+			{
+				"command": "forgevsc.favoriteGuide",
+				"title": "%command.favoriteGuide.title%",
+				"category": "ForgeVSC",
+				"icon": "$(star-empty)"
+			},
+			{
+				"command": "forgevsc.unfavoriteGuide",
+				"title": "%command.unfavoriteGuide.title%",
+				"category": "ForgeVSC",
+				"icon": "$(star-full)"
+			},
+			{
+				"command": "forgevsc.createGuide",
+				"title": "%command.createGuide.title%",
+				"category": "ForgeVSC",
+				"icon": "$(add)"
+			},
+			{
+				"command": "forgevsc.openGuideExternal",
+				"title": "%command.openGuideExternal.title%",
+				"category": "ForgeVSC",
+				"icon": "$(link-external)"
+			},
+			{
+				"command": "forgevsc.openExtensionSettings",
+				"title": "%command.openExtensionSettings.title%",
+				"category": "ForgeVSC",
+				"icon": "$(settings)"
+			}
+		],
+		"grammars": [
+			{
+				"scopeName": "forge.inject",
+				"path": "./syntaxes/forge.tmLanguage.json",
+				"injectTo": [
+					"source.js",
+					"source.ts",
+					"source.jsx",
+					"source.tsx"
+				]
+			}
+		],
+		"jsonValidation": [
+			{
+				"fileMatch": [
+					".forgevsc.json",
+					".vscode/.forgevsc.json"
+				],
+				"url": "./forgevsc.schema.json"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "forge",
+					"title": "%view.guides.title%",
+					"icon": "$(book)"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "forge.guidesView",
+				"contents": "%view.guides.welcome%"
+			}
+		],
+		"views": {
+			"forge": [
+				{
+					"id": "forge.guidesView",
+					"name": "%view.guides.title%",
+					"icon": "$(book)"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "forgevsc.createGuide",
+					"when": "view == forge.guidesView",
+					"group": "navigation@0"
+				},
+				{
+					"command": "forgevsc.searchGuides",
+					"when": "view == forge.guidesView",
+					"group": "navigation@1"
+				},
+				{
+					"command": "forgevsc.reloadGuideMetadata",
+					"when": "view == forge.guidesView",
+					"group": "navigation@2"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "forgevsc.favoriteGuide",
+					"when": "view == forge.guidesView && viewItem == guide",
+					"group": "inline"
+				},
+				{
+					"command": "forgevsc.unfavoriteGuide",
+					"when": "view == forge.guidesView && viewItem == guide.favorite",
+					"group": "inline"
+				},
+				{
+					"command": "forgevsc.openGuideExternal",
+					"when": "view == forge.guidesView && viewItem == guide || view == forge.guidesView && viewItem == guide.favorite",
+					"group": "inline@2"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "forgevsc.openGuide",
+					"when": "false"
+				},
+				{
+					"command": "forgevsc.previewGuide",
+					"when": "false"
+				},
+				{
+					"command": "forgevsc.favoriteGuide",
+					"when": "false"
+				},
+				{
+					"command": "forgevsc.unfavoriteGuide",
+					"when": "false"
+				},
+				{
+					"command": "forgevsc.openGuideExternal",
+					"when": "false"
+				}
+			]
+		},
+		"configurationDefaults": {
+			"editor.quickSuggestions": {
+				"other": true,
+				"comments": false,
+				"strings": true
+			},
+			"editor.suggestOnTriggerCharacters": true
+		},
+		"configuration": {
+			"title": "ForgeVSC",
+			"properties": {
+				"forgevsc.global.enabledWorkspaces": {
+					"order": 0,
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"uniqueItems": true,
+					"scope": "machine",
+					"description": "%config.global.enabledWorkspaces.description%"
+				},
+				"forgevsc.workspace.additionalPackages": {
+					"order": 1,
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"uniqueItems": true,
+					"description": "%config.workspace.additionalPackages.description%"
+				},
+				"forgevsc.workspace.customFunctionPaths": {
+					"order": 2,
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"uniqueItems": true,
+					"description": "%config.workspace.customFunctionPaths.description%"
+				},
+				"forgevsc.workspace.colors.function.name": {
+					"order": 10,
+					"type": "string",
+					"default": "#AC75FF",
+					"description": "%config.workspace.colors.function.name.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.function.name.patternError%"
+				},
+				"forgevsc.workspace.colors.function.dollar": {
+					"order": 11,
+					"type": "string",
+					"default": "#FE7CEB",
+					"description": "%config.workspace.colors.function.dollar.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.function.dollar.patternError%"
+				},
+				"forgevsc.workspace.colors.function.semicolon": {
+					"order": 12,
+					"type": "string",
+					"default": "#C586C0",
+					"description": "%config.workspace.colors.function.semicolon.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.function.semicolon.patternError%"
+				},
+				"forgevsc.workspace.colors.arguments.condition": {
+					"order": 13,
+					"type": "string",
+					"default": "#4FC1FF",
+					"description": "%config.workspace.colors.arguments.condition.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.arguments.condition.patternError%"
+				},
+				"forgevsc.workspace.colors.operators.negation": {
+					"order": 14,
+					"type": "string",
+					"default": "#4FA3FF",
+					"description": "%config.workspace.colors.operators.negation.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.operators.negation.patternError%"
+				},
+				"forgevsc.workspace.colors.operators.silent": {
+					"order": 15,
+					"type": "string",
+					"default": "#FF9F43",
+					"description": "%config.workspace.colors.operators.silent.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.operators.silent.patternError%"
+				},
+				"forgevsc.workspace.colors.operators.count": {
+					"order": 16,
+					"type": "string",
+					"default": "#33D17A",
+					"description": "%config.workspace.colors.operators.count.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.operators.count.patternError%"
+				},
+				"forgevsc.workspace.colors.operators.countDelimiter": {
+					"order": 17,
+					"type": "string",
+					"default": "#76E3A0",
+					"description": "%config.workspace.colors.operators.countDelimiter.description%",
+					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
+					"patternErrorMessage": "%config.workspace.colors.operators.countDelimiter.patternError%"
+				},
+				"forgevsc.workspace.features.folding": {
+					"order": 30,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.folding.description%"
+				},
+				"forgevsc.workspace.features.hoverInfo": {
+					"order": 31,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.hoverInfo.description%"
+				},
+				"forgevsc.workspace.features.suggestions": {
+					"order": 32,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.suggestions.description%"
+				},
+				"forgevsc.workspace.features.signatureHelp": {
+					"order": 33,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.signatureHelp.description%"
+				},
+				"forgevsc.workspace.features.diagnostics": {
+					"order": 34,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.diagnostics.description%"
+				},
+				"forgevsc.workspace.features.autocompletion": {
+					"order": 35,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.features.autocompletion.description%"
+				},
+				"forgevsc.workspace.rpc.enabled": {
+					"order": 50,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.workspace.rpc.enabled.description%"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"web": "npx vscode-test-web --extensionDevelopmentPath=. --port=3001",
+		"trans": "npx @vscode/l10n-dev export -o ./translations ./src",
+		"publish": "dotenv -- sh -c 'npm run package && npx ovsx publish -p $OVSX_PAT'",
+		"package": "npx @vscode/vsce package",
+		"vscode:prepublish": "npm run build",
+		"compile": "tsc -p ./",
+		"build:web": "node scripts/esbuild.mjs",
+		"build": "npm run compile && npm run build:web",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run build && npm run lint",
+		"lint": "biome check",
+		"lint:fix": "biome check --fix"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^26.0.0",
+		"@types/vscode": "^1.105.0",
+		"@vscode/l10n-dev": "^0.0.35",
+		"@vscode/test-web": "^0.0.81",
+		"@vscode/vsce": "^3.9.2",
+		"@biomejs/biome": "^2.5.4",
+		"dotenv-cli": "^11.0.0",
+		"esbuild": "^0.28.1",
+		"ovsx": "^1.0.2"
+	},
+	"dependencies": {
+		"@xhayper/discord-rpc": "^1.3.4",
+		"typescript": "^6.0.3"
+	},
+	"allowScripts": {
+		"@playwright/browser-chromium@1.61.0": true,
+		"@vscode/vsce-sign@2.0.9": true,
+		"esbuild@0.28.1": true,
+		"keytar@7.9.0": true
+	}
 }

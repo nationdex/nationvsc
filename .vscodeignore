@@ -4,6 +4,7 @@
 src/**
 scripts/**
 .gitignore
+.github/**
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/eslint.config.mjs
@@ -12,6 +13,10 @@ vsc-extension-quickstart.md
 **/.vscode-test.*
 .tests/**
 \.env
+\.env.*
 assets/examples/
 crowdin.yml
+biome.json
+bun.lock
+bun.lockb
 .opencode

@@ -1,10 +1,10 @@
 {
-	"name": "forgevsc",
-	"displayName": "ForgeVSC",
+	"name": "nationvsc",
+	"displayName": "NationVSC",
 	"description": "%extension.description%",
 	"publisher": "tryforge",
 	"version": "1.2.8",
-	"icon": "./assets/ForgeScript.png",
+	"icon": "./assets/Nationdex.png",
 	"main": "./out/extension.js",
 	"browser": "./out/web/extension.js",
 	"l10n": "./translations",
@@ -24,7 +24,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/tryforge/ForgeVSC.git"
+		"url": "git+https://github.com/nationdex/nationvsc.git"
 	},
 	"license": "LGPL-3.0-or-later",
 	"activationEvents": [
@@ -49,73 +49,73 @@
 				],
 				"configuration": "./language-configuration.json",
 				"icon": {
-					"dark": "./assets/ForgeScript.png",
-					"light": "./assets/ForgeScript.png"
+					"dark": "./assets/Nationdex.png",
+					"light": "./assets/Nationdex.png"
 				}
 			}
 		],
 		"commands": [
 			{
-				"command": "forgevsc.createConfig",
+				"command": "nationvsc.createConfig",
 				"title": "%command.createConfig.title%",
-				"category": "ForgeVSC"
+				"category": "NationVSC"
 			},
 			{
-				"command": "forgevsc.reloadFunctionMetadata",
+				"command": "nationvsc.reloadFunctionMetadata",
 				"title": "%command.reloadFunctionMetadata.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "forgevsc.searchGuides",
+				"command": "nationvsc.searchGuides",
 				"title": "%command.searchGuides.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(search)"
 			},
 			{
-				"command": "forgevsc.reloadGuideMetadata",
+				"command": "nationvsc.reloadGuideMetadata",
 				"title": "%command.reloadGuideMetadata.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "forgevsc.openGuide",
+				"command": "nationvsc.openGuide",
 				"title": "%command.openGuide.title%",
-				"category": "ForgeVSC"
+				"category": "NationVSC"
 			},
 			{
-				"command": "forgevsc.previewGuide",
+				"command": "nationvsc.previewGuide",
 				"title": "%command.previewGuide.title%",
-				"category": "ForgeVSC"
+				"category": "NationVSC"
 			},
 			{
-				"command": "forgevsc.favoriteGuide",
+				"command": "nationvsc.favoriteGuide",
 				"title": "%command.favoriteGuide.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(star-empty)"
 			},
 			{
-				"command": "forgevsc.unfavoriteGuide",
+				"command": "nationvsc.unfavoriteGuide",
 				"title": "%command.unfavoriteGuide.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(star-full)"
 			},
 			{
-				"command": "forgevsc.createGuide",
+				"command": "nationvsc.createGuide",
 				"title": "%command.createGuide.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(add)"
 			},
 			{
-				"command": "forgevsc.openGuideExternal",
+				"command": "nationvsc.openGuideExternal",
 				"title": "%command.openGuideExternal.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(link-external)"
 			},
 			{
-				"command": "forgevsc.openExtensionSettings",
+				"command": "nationvsc.openExtensionSettings",
 				"title": "%command.openExtensionSettings.title%",
-				"category": "ForgeVSC",
+				"category": "NationVSC",
 				"icon": "$(settings)"
 			}
 		],
@@ -137,13 +137,13 @@
 					".forgevsc.json",
 					".vscode/.forgevsc.json"
 				],
-				"url": "./forgevsc.schema.json"
+				"url": "./nationvsc.schema.json"
 			}
 		],
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "forge",
+					"id": "nation",
 					"title": "%view.guides.title%",
 					"icon": "$(book)"
 				}
@@ -151,14 +151,14 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "forge.guidesView",
+				"view": "nation.guidesView",
 				"contents": "%view.guides.welcome%"
 			}
 		],
 		"views": {
-			"forge": [
+			"nation": [
 				{
-					"id": "forge.guidesView",
+					"id": "nation.guidesView",
 					"name": "%view.guides.title%",
 					"icon": "$(book)"
 				}
@@ -167,57 +167,57 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "forgevsc.createGuide",
-					"when": "view == forge.guidesView",
+					"command": "nationvsc.createGuide",
+					"when": "view == nation.guidesView",
 					"group": "navigation@0"
 				},
 				{
-					"command": "forgevsc.searchGuides",
-					"when": "view == forge.guidesView",
+					"command": "nationvsc.searchGuides",
+					"when": "view == nation.guidesView",
 					"group": "navigation@1"
 				},
 				{
-					"command": "forgevsc.reloadGuideMetadata",
-					"when": "view == forge.guidesView",
+					"command": "nationvsc.reloadGuideMetadata",
+					"when": "view == nation.guidesView",
 					"group": "navigation@2"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "forgevsc.favoriteGuide",
-					"when": "view == forge.guidesView && viewItem == guide",
+					"command": "nationvsc.favoriteGuide",
+					"when": "view == nation.guidesView && viewItem == guide",
 					"group": "inline"
 				},
 				{
-					"command": "forgevsc.unfavoriteGuide",
-					"when": "view == forge.guidesView && viewItem == guide.favorite",
+					"command": "nationvsc.unfavoriteGuide",
+					"when": "view == nation.guidesView && viewItem == guide.favorite",
 					"group": "inline"
 				},
 				{
-					"command": "forgevsc.openGuideExternal",
-					"when": "view == forge.guidesView && viewItem == guide || view == forge.guidesView && viewItem == guide.favorite",
+					"command": "nationvsc.openGuideExternal",
+					"when": "view == nation.guidesView && viewItem == guide || view == nation.guidesView && viewItem == guide.favorite",
 					"group": "inline@2"
 				}
 			],
 			"commandPalette": [
 				{
-					"command": "forgevsc.openGuide",
+					"command": "nationvsc.openGuide",
 					"when": "false"
 				},
 				{
-					"command": "forgevsc.previewGuide",
+					"command": "nationvsc.previewGuide",
 					"when": "false"
 				},
 				{
-					"command": "forgevsc.favoriteGuide",
+					"command": "nationvsc.favoriteGuide",
 					"when": "false"
 				},
 				{
-					"command": "forgevsc.unfavoriteGuide",
+					"command": "nationvsc.unfavoriteGuide",
 					"when": "false"
 				},
 				{
-					"command": "forgevsc.openGuideExternal",
+					"command": "nationvsc.openGuideExternal",
 					"when": "false"
 				}
 			]
@@ -231,9 +231,9 @@
 			"editor.suggestOnTriggerCharacters": true
 		},
 		"configuration": {
-			"title": "ForgeVSC",
+			"title": "NationVSC",
 			"properties": {
-				"forgevsc.global.enabledWorkspaces": {
+				"nationvsc.global.enabledWorkspaces": {
 					"order": 0,
 					"type": "array",
 					"items": {
@@ -244,7 +244,7 @@
 					"scope": "machine",
 					"description": "%config.global.enabledWorkspaces.description%"
 				},
-				"forgevsc.workspace.additionalPackages": {
+				"nationvsc.workspace.additionalPackages": {
 					"order": 1,
 					"type": "array",
 					"items": {
@@ -253,7 +253,7 @@
 					"uniqueItems": true,
 					"description": "%config.workspace.additionalPackages.description%"
 				},
-				"forgevsc.workspace.customFunctionPaths": {
+				"nationvsc.workspace.customFunctionPaths": {
 					"order": 2,
 					"type": "array",
 					"items": {
@@ -263,7 +263,7 @@
 					"uniqueItems": true,
 					"description": "%config.workspace.customFunctionPaths.description%"
 				},
-				"forgevsc.workspace.colors.function.name": {
+				"nationvsc.workspace.colors.function.name": {
 					"order": 10,
 					"type": "string",
 					"default": "#AC75FF",
@@ -271,7 +271,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.function.name.patternError%"
 				},
-				"forgevsc.workspace.colors.function.dollar": {
+				"nationvsc.workspace.colors.function.dollar": {
 					"order": 11,
 					"type": "string",
 					"default": "#FE7CEB",
@@ -279,7 +279,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.function.dollar.patternError%"
 				},
-				"forgevsc.workspace.colors.function.semicolon": {
+				"nationvsc.workspace.colors.function.semicolon": {
 					"order": 12,
 					"type": "string",
 					"default": "#C586C0",
@@ -287,7 +287,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.function.semicolon.patternError%"
 				},
-				"forgevsc.workspace.colors.arguments.condition": {
+				"nationvsc.workspace.colors.arguments.condition": {
 					"order": 13,
 					"type": "string",
 					"default": "#4FC1FF",
@@ -295,7 +295,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.arguments.condition.patternError%"
 				},
-				"forgevsc.workspace.colors.operators.negation": {
+				"nationvsc.workspace.colors.operators.negation": {
 					"order": 14,
 					"type": "string",
 					"default": "#4FA3FF",
@@ -303,7 +303,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.operators.negation.patternError%"
 				},
-				"forgevsc.workspace.colors.operators.silent": {
+				"nationvsc.workspace.colors.operators.silent": {
 					"order": 15,
 					"type": "string",
 					"default": "#FF9F43",
@@ -311,7 +311,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.operators.silent.patternError%"
 				},
-				"forgevsc.workspace.colors.operators.count": {
+				"nationvsc.workspace.colors.operators.count": {
 					"order": 16,
 					"type": "string",
 					"default": "#33D17A",
@@ -319,7 +319,7 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.operators.count.patternError%"
 				},
-				"forgevsc.workspace.colors.operators.countDelimiter": {
+				"nationvsc.workspace.colors.operators.countDelimiter": {
 					"order": 17,
 					"type": "string",
 					"default": "#76E3A0",
@@ -327,43 +327,43 @@
 					"pattern": "^(?:#?(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))?$",
 					"patternErrorMessage": "%config.workspace.colors.operators.countDelimiter.patternError%"
 				},
-				"forgevsc.workspace.features.folding": {
+				"nationvsc.workspace.features.folding": {
 					"order": 30,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.folding.description%"
 				},
-				"forgevsc.workspace.features.hoverInfo": {
+				"nationvsc.workspace.features.hoverInfo": {
 					"order": 31,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.hoverInfo.description%"
 				},
-				"forgevsc.workspace.features.suggestions": {
+				"nationvsc.workspace.features.suggestions": {
 					"order": 32,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.suggestions.description%"
 				},
-				"forgevsc.workspace.features.signatureHelp": {
+				"nationvsc.workspace.features.signatureHelp": {
 					"order": 33,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.signatureHelp.description%"
 				},
-				"forgevsc.workspace.features.diagnostics": {
+				"nationvsc.workspace.features.diagnostics": {
 					"order": 34,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.diagnostics.description%"
 				},
-				"forgevsc.workspace.features.autocompletion": {
+				"nationvsc.workspace.features.autocompletion": {
 					"order": 35,
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.features.autocompletion.description%"
 				},
-				"forgevsc.workspace.rpc.enabled": {
+				"nationvsc.workspace.rpc.enabled": {
 					"order": 50,
 					"type": "boolean",
 					"default": true,
@@ -373,16 +373,16 @@
 		}
 	},
 	"scripts": {
-		"web": "npx vscode-test-web --extensionDevelopmentPath=. --port=3001",
-		"trans": "npx @vscode/l10n-dev export -o ./translations ./src",
-		"publish": "dotenv -- sh -c 'npm run package && npx ovsx publish -p $OVSX_PAT'",
-		"package": "npx @vscode/vsce package",
-		"vscode:prepublish": "npm run build",
+		"web": "bunx vscode-test-web --extensionDevelopmentPath=. --port=3001",
+		"trans": "bunx @vscode/l10n-dev export -o ./translations ./src",
+		"publish": "dotenv -- sh -c 'bun run package && bunx ovsx publish -p $OVSX_PAT'",
+		"package": "bunx @vscode/vsce package",
+		"vscode:prepublish": "bun run build",
 		"compile": "tsc -p ./",
 		"build:web": "node scripts/esbuild.mjs",
-		"build": "npm run compile && npm run build:web",
+		"build": "bun run compile && bun run build:web",
 		"watch": "tsc -watch -p ./",
-		"pretest": "npm run build && npm run lint",
+		"pretest": "bun run build && bun run lint:fix",
 		"lint": "biome check",
 		"lint:fix": "biome check --fix"
 	},

@@ -1,9 +1,9 @@
 <div align="center">
 
-<img height="150" width="150" src="https://raw.githubusercontent.com/tryforge/ForgeVSC/main/assets/ForgeScript.png" alt="ForgeVSC">
+<img height="150" width="150" src="https://raw.githubusercontent.com/tryforge/ForgeVSC/main/assets/Nationdex.png" alt="ForgeVSC">
 
-# ForgeVSC
-Official Visual Studio Code Extension for ForgeScript.
+# NationVSC
+Fork of BotForge's Official Visual Studio Code Extension for ForgeScript.
 
 <a href="https://marketplace.visualstudio.com/items?itemName=tryforge.forgevsc"><img src="https://img.shields.io/github/package-json/v/tryforge/ForgeVSC/main?label=VSC+Marketplace&color=5c16d4" alt="VSC Marketplace"></a>
 <a href="https://open-vsx.org/extension/tryforge/forgevsc"><img src="https://img.shields.io/open-vsx/v/tryforge/forgevsc?label=OpenVSX+Marketplace&color=5c16d4 " alt="OpenVSX Marketplace"></a>
@@ -12,7 +12,7 @@ Official Visual Studio Code Extension for ForgeScript.
 
 ---
 
-ForgeVSC brings a much better development experience to ForgeScript inside Visual Studio Code. It adds rich editor tooling for writing Forge code in JavaScript, TypeScript, JSX, and TSX, while also providing a dedicated guides sidebar, diagnostics, hover info, suggestions, syntax highlighting, and more!
+ForgeVSC (or NationVSC) brings a much better development experience to ForgeScript inside Visual Studio Code. It adds rich editor tooling for writing Forge code in JavaScript, TypeScript, JSX, and TSX, while also providing a dedicated guides sidebar, diagnostics, hover info, suggestions, syntax highlighting, and more!
 
 </div>
 

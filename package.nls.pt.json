@@ -12,7 +12,7 @@
 	"command.openGuideExternal.title": "Abrir Instruções (Externo)",
 	"command.openExtensionSettings.title": "Abrir Configurações da Extensão",
 	"view.guides.title": "Instruções",
-	"view.guides.welcome": "Nenhuma instrução disponível.\n[$(refresh) Recarregar Instruções](command:forgevsc.reloadGuideMetadata)\n[$(add) Criar Instruções](command:forgevsc.createGuide)",
+	"view.guides.welcome": "Nenhuma instrução disponível.\n[$(refresh) Recarregar Instruções](command:nationvsc.reloadGuideMetadata)\n[$(add) Criar Instruções](command:nationvsc.createGuide)",
 	"config.global.enabledWorkspaces.description": "Lista de nomes de espaços de trabalho onde o ForgeVSC está habilitado. Deixe vazio para habilitar a extensão para todos os espaços de trabalho.",
 	"config.workspace.additionalPackages.description": "Pacotes/extensões adicionais para buscar metadados. Por padrão, os pacotes Forge instalados são detectados automaticamente. Esta propriedade é apenas necessária se o fetch de metadados falhar ou se você quiser incluir pacotes extras.",
 	"config.workspace.customFunctionPaths.description": "Caminho(s) para a(s) pasta(s) de suas funções personalizadas. Isso é usado para gerar metadados e fornecer suporte completo para suas funções personalizadas.",

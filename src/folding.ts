@@ -43,11 +43,7 @@ export function registerFolding(ctx: vscode.ExtensionContext) {
 
 					if (endLine > startLine) {
 						ranges.push(
-							new vscode.FoldingRange(
-								startLine,
-								endLine,
-								vscode.FoldingRangeKind.Region,
-							),
+							new vscode.FoldingRange(startLine, endLine, vscode.FoldingRangeKind.Region),
 						);
 					}
 				}

@@ -1,99 +1,76 @@
 "use strict";
-var __createBinding =
-	(this && this.__createBinding) ||
-	(Object.create
-		? function (o, m, k, k2) {
-				if (k2 === undefined) k2 = k;
-				var desc = Object.getOwnPropertyDescriptor(m, k);
-				if (
-					!desc ||
-					("get" in desc ? !m.__esModule : desc.writable || desc.configurable)
-				) {
-					desc = {
-						enumerable: true,
-						get: function () {
-							return m[k];
-						},
-					};
-				}
-				Object.defineProperty(o, k2, desc);
-			}
-		: function (o, m, k, k2) {
-				if (k2 === undefined) k2 = k;
-				o[k2] = m[k];
-			});
-var __setModuleDefault =
-	(this && this.__setModuleDefault) ||
-	(Object.create
-		? function (o, v) {
-				Object.defineProperty(o, "default", { enumerable: true, value: v });
-			}
-		: function (o, v) {
-				o["default"] = v;
-			});
-var __importStar =
-	(this && this.__importStar) ||
-	(function () {
-		var ownKeys = function (o) {
-			ownKeys =
-				Object.getOwnPropertyNames ||
-				function (o) {
-					var ar = [];
-					for (var k in o)
-						if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-					return ar;
-				};
-			return ownKeys(o);
-		};
-		return function (mod) {
-			if (mod && mod.__esModule) return mod;
-			var result = {};
-			if (mod != null)
-				for (var k = ownKeys(mod), i = 0; i < k.length; i++)
-					if (k[i] !== "default") __createBinding(result, mod, k[i]);
-			__setModuleDefault(result, mod);
-			return result;
-		};
-	})();
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Defaults = void 0;
 exports.getSettingsConfig = getSettingsConfig;
 exports.getExtensionConfig = getExtensionConfig;
 exports.findExtensionConfig = findExtensionConfig;
 exports.loadExtensionConfig = loadExtensionConfig;
-const _1 = require(".");
 const vscode = __importStar(require("vscode"));
+const _1 = require(".");
 exports.Defaults = {
-	enabledWorkspaces: [],
-	customFunctionPaths: [],
-	additionalPackages: [],
-	colors: {
-		function: {
-			name: "#AC75FF",
-			dollar: "#FE7CEB",
-			semicolon: "#C586C0",
-		},
-		arguments: {
-			condition: "#4FC1FF",
-		},
-		operators: {
-			negation: "#4FA3FF",
-			silent: "#FF9F43",
-			count: "#33D17A",
-			countDelimiter: "#76E3A0",
-		},
-	},
-	features: {
-		folding: true,
-		hoverInfo: true,
-		suggestions: true,
-		signatureHelp: true,
-		diagnostics: true,
-		autocompletion: true,
-	},
-	rpc: {
-		enabled: true,
-	},
+    enabledWorkspaces: [],
+    customFunctionPaths: [],
+    additionalPackages: [],
+    colors: {
+        function: {
+            name: "#AC75FF",
+            dollar: "#FE7CEB",
+            semicolon: "#C586C0",
+        },
+        arguments: {
+            condition: "#4FC1FF",
+        },
+        operators: {
+            negation: "#4FA3FF",
+            silent: "#FF9F43",
+            count: "#33D17A",
+            countDelimiter: "#76E3A0",
+        },
+    },
+    features: {
+        folding: true,
+        hoverInfo: true,
+        suggestions: true,
+        signatureHelp: true,
+        diagnostics: true,
+        autocompletion: true,
+    },
+    rpc: {
+        enabled: true,
+    },
 };
 let cached = exports.Defaults;
 /**
@@ -101,50 +78,50 @@ let cached = exports.Defaults;
  * @returns
  */
 function getSettingsConfig() {
-	const vs = vscode.workspace.getConfiguration("forgevsc");
-	return {
-		global: {
-			enabledWorkspaces: vs.get("global.enabledWorkspaces"),
-		},
-		workspace: {
-			customFunctionPaths: vs.get("workspace.customFunctionPaths"),
-			additionalPackages: vs.get("workspace.additionalPackages"),
-			colors: {
-				function: {
-					name: vs.get("workspace.colors.function.name"),
-					dollar: vs.get("workspace.colors.function.dollar"),
-					semicolon: vs.get("workspace.colors.function.semicolon"),
-				},
-				arguments: {
-					condition: vs.get("workspace.colors.arguments.condition"),
-				},
-				operators: {
-					negation: vs.get("workspace.colors.operators.negation"),
-					silent: vs.get("workspace.colors.operators.silent"),
-					count: vs.get("workspace.colors.operators.count"),
-					countDelimiter: vs.get("workspace.colors.operators.countDelimiter"),
-				},
-			},
-			features: {
-				folding: vs.get("workspace.features.folding"),
-				hoverInfo: vs.get("workspace.features.hoverInfo"),
-				suggestions: vs.get("workspace.features.suggestions"),
-				signatureHelp: vs.get("workspace.features.signatureHelp"),
-				diagnostics: vs.get("workspace.features.diagnostics"),
-				autocompletion: vs.get("workspace.features.autocompletion"),
-			},
-			rpc: {
-				enabled: vs.get("workspace.rpc.enabled"),
-			},
-		},
-	};
+    const vs = vscode.workspace.getConfiguration("nationvsc");
+    return {
+        global: {
+            enabledWorkspaces: vs.get("global.enabledWorkspaces"),
+        },
+        workspace: {
+            customFunctionPaths: vs.get("workspace.customFunctionPaths"),
+            additionalPackages: vs.get("workspace.additionalPackages"),
+            colors: {
+                function: {
+                    name: vs.get("workspace.colors.function.name"),
+                    dollar: vs.get("workspace.colors.function.dollar"),
+                    semicolon: vs.get("workspace.colors.function.semicolon"),
+                },
+                arguments: {
+                    condition: vs.get("workspace.colors.arguments.condition"),
+                },
+                operators: {
+                    negation: vs.get("workspace.colors.operators.negation"),
+                    silent: vs.get("workspace.colors.operators.silent"),
+                    count: vs.get("workspace.colors.operators.count"),
+                    countDelimiter: vs.get("workspace.colors.operators.countDelimiter"),
+                },
+            },
+            features: {
+                folding: vs.get("workspace.features.folding"),
+                hoverInfo: vs.get("workspace.features.hoverInfo"),
+                suggestions: vs.get("workspace.features.suggestions"),
+                signatureHelp: vs.get("workspace.features.signatureHelp"),
+                diagnostics: vs.get("workspace.features.diagnostics"),
+                autocompletion: vs.get("workspace.features.autocompletion"),
+            },
+            rpc: {
+                enabled: vs.get("workspace.rpc.enabled"),
+            },
+        },
+    };
 }
 /**
  * Returns the config options of the extension.
  * @returns
  */
 function getExtensionConfig() {
-	return cached;
+    return cached;
 }
 /**
  * Finds the config file path of the extension.
@@ -152,98 +129,84 @@ function getExtensionConfig() {
  * @returns
  */
 async function findExtensionConfig(root) {
-	const paths = [
-		vscode.Uri.joinPath(root, ".forgevsc.json"),
-		vscode.Uri.joinPath(root, ".vscode", ".forgevsc.json"),
-	];
-	for (const uri of paths) {
-		try {
-			await vscode.workspace.fs.stat(uri);
-			return uri;
-		} catch {}
-	}
-	return null;
+    const paths = [
+        vscode.Uri.joinPath(root, ".forgevsc.json"),
+        vscode.Uri.joinPath(root, ".vscode", ".forgevsc.json"),
+    ];
+    for (const uri of paths) {
+        try {
+            await vscode.workspace.fs.stat(uri);
+            return uri;
+        }
+        catch { }
+    }
+    return null;
 }
 /**
  * Loads the config options of the extension.
  * @returns
  */
 async function loadExtensionConfig() {
-	const folders = vscode.workspace.workspaceFolders;
-	const vs = getSettingsConfig();
-	let file = {};
-	if (folders?.length) {
-		const root = folders[0].uri;
-		const uri = await findExtensionConfig(root);
-		if (uri) {
-			try {
-				const raw = await vscode.workspace.fs.readFile(uri);
-				const text = new TextDecoder().decode(raw);
-				file = JSON.parse(text);
-			} catch {}
-		}
-	}
-	cached = {
-		enabledWorkspaces: vs.global.enabledWorkspaces ?? [],
-		customFunctionPaths: (0, _1.toArray)(
-			file.customFunctionPaths ??
-				vs.workspace.customFunctionPaths ??
-				exports.Defaults.customFunctionPaths,
-		),
-		additionalPackages: Array.from(
-			new Set([
-				...exports.Defaults.additionalPackages,
-				...(vs.workspace.additionalPackages ?? []),
-				...(file.additionalPackages ?? []),
-			]),
-		),
-		colors: {
-			function: {
-				...exports.Defaults.colors.function,
-				...(vs.workspace.colors?.function ?? {}),
-				...(file.colors?.function ?? {}),
-			},
-			arguments: {
-				...exports.Defaults.colors.arguments,
-				...(vs.workspace.colors?.arguments ?? {}),
-				...(file.colors?.arguments ?? {}),
-			},
-			operators: {
-				...exports.Defaults.colors.operators,
-				...(vs.workspace.colors?.operators ?? {}),
-				...(file.colors?.operators ?? {}),
-			},
-		},
-		features: {
-			folding:
-				file.features?.folding ??
-				vs.workspace.features?.folding ??
-				exports.Defaults.features.folding,
-			hoverInfo:
-				file.features?.hoverInfo ??
-				vs.workspace.features?.hoverInfo ??
-				exports.Defaults.features.hoverInfo,
-			suggestions:
-				file.features?.suggestions ??
-				vs.workspace.features?.suggestions ??
-				exports.Defaults.features.suggestions,
-			signatureHelp:
-				file.features?.signatureHelp ??
-				vs.workspace.features?.signatureHelp ??
-				exports.Defaults.features.signatureHelp,
-			diagnostics:
-				file.features?.diagnostics ??
-				vs.workspace.features?.diagnostics ??
-				exports.Defaults.features.diagnostics,
-			autocompletion:
-				file.features?.autocompletion ??
-				vs.workspace.features?.autocompletion ??
-				exports.Defaults.features.autocompletion,
-		},
-		rpc: {
-			enabled: vs.workspace.rpc.enabled ?? exports.Defaults.rpc.enabled,
-		},
-	};
-	return cached;
+    const folders = vscode.workspace.workspaceFolders;
+    const vs = getSettingsConfig();
+    let file = {};
+    if (folders?.length) {
+        const root = folders[0].uri;
+        const uri = await findExtensionConfig(root);
+        if (uri) {
+            try {
+                const raw = await vscode.workspace.fs.readFile(uri);
+                const text = new TextDecoder().decode(raw);
+                file = JSON.parse(text);
+            }
+            catch { }
+        }
+    }
+    cached = {
+        enabledWorkspaces: vs.global.enabledWorkspaces ?? [],
+        customFunctionPaths: (0, _1.toArray)(file.customFunctionPaths ?? vs.workspace.customFunctionPaths ?? exports.Defaults.customFunctionPaths),
+        additionalPackages: Array.from(new Set([
+            ...exports.Defaults.additionalPackages,
+            ...(vs.workspace.additionalPackages ?? []),
+            ...(file.additionalPackages ?? []),
+        ])),
+        colors: {
+            function: {
+                ...exports.Defaults.colors.function,
+                ...(vs.workspace.colors?.function ?? {}),
+                ...(file.colors?.function ?? {}),
+            },
+            arguments: {
+                ...exports.Defaults.colors.arguments,
+                ...(vs.workspace.colors?.arguments ?? {}),
+                ...(file.colors?.arguments ?? {}),
+            },
+            operators: {
+                ...exports.Defaults.colors.operators,
+                ...(vs.workspace.colors?.operators ?? {}),
+                ...(file.colors?.operators ?? {}),
+            },
+        },
+        features: {
+            folding: file.features?.folding ?? vs.workspace.features?.folding ?? exports.Defaults.features.folding,
+            hoverInfo: file.features?.hoverInfo ?? vs.workspace.features?.hoverInfo ?? exports.Defaults.features.hoverInfo,
+            suggestions: file.features?.suggestions ??
+                vs.workspace.features?.suggestions ??
+                exports.Defaults.features.suggestions,
+            signatureHelp: file.features?.signatureHelp ??
+                vs.workspace.features?.signatureHelp ??
+                exports.Defaults.features.signatureHelp,
+            diagnostics: file.features?.diagnostics ??
+                vs.workspace.features?.diagnostics ??
+                exports.Defaults.features.diagnostics,
+            autocompletion: file.features?.autocompletion ??
+                vs.workspace.features?.autocompletion ??
+                exports.Defaults.features.autocompletion,
+        },
+        rpc: {
+            enabled: vs.workspace.rpc.enabled ?? exports.Defaults.rpc.enabled,
+        },
+    };
+    return cached;
 }
 //# sourceMappingURL=config.js.map

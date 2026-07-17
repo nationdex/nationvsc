@@ -7,7 +7,7 @@ async function main() {
 	if (!BASE_URL) throw new Error(`Missing "GUIDES_BASE_URL" secret.`);
 	if (!API_KEY) throw new Error(`Missing "GUIDES_API_KEY" secret.`);
 
-	const res = await fetch(BASE_URL + "?limit=none", {
+	const res = await fetch(`${BASE_URL}?limit=none`, {
 		headers: {
 			Accept: "application/json",
 			Password: API_KEY,
@@ -15,13 +15,11 @@ async function main() {
 	});
 	if (!res.ok) {
 		const text = await res.text().catch(() => "");
-		throw new Error(
-			`Fetching guides failed: ${res.status} ${res.statusText}\n${text}`,
-		);
+		throw new Error(`Fetching guides failed: ${res.status} ${res.statusText}\n${text}`);
 	}
 
 	const data = await res.json();
-	if (!data || data.success !== true || !Array.isArray(data.guides)) {
+	if (data?.success !== true || !Array.isArray(data.guides)) {
 		throw new Error(`API response was not successful or missing guides array.`);
 	}
 

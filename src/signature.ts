@@ -31,10 +31,7 @@ export function registerSignatureHelp(ctx: vscode.ExtensionContext) {
 }
 
 class ForgeSignatureHelpProvider implements vscode.SignatureHelpProvider {
-	async provideSignatureHelp(
-		document: vscode.TextDocument,
-		position: vscode.Position,
-	) {
+	async provideSignatureHelp(document: vscode.TextDocument, position: vscode.Position) {
 		const code = locateCodeBlock(document, position);
 		const config = getExtensionConfig();
 		if (
@@ -49,7 +46,7 @@ class ForgeSignatureHelpProvider implements vscode.SignatureHelpProvider {
 		if (openIndex === -1) return null;
 
 		const beforeBracket = text.slice(0, openIndex);
-		const match = beforeBracket.match(new RegExp(FunctionRegex.source + "$"));
+		const match = beforeBracket.match(new RegExp(`${FunctionRegex.source}$`));
 		if (!match) return null;
 
 		const startIndex = beforeBracket.lastIndexOf("$");

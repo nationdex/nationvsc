@@ -17,56 +17,47 @@ import {
 export function registerDefaultCommands(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		// Open Extension Log
-		vscode.commands.registerCommand("forgevsc.openExtensionLog", () => {
+		vscode.commands.registerCommand("nationvsc.openExtensionLog", () => {
 			Logger.show();
 		}),
 
 		// Open Settings (Backend)
 		vscode.commands.registerCommand(
-			"forgevsc.openSettings",
+			"nationvsc.openSettings",
 			async (setting?: string, user: boolean = true) => {
 				await vscode.commands.executeCommand(
-					"workbench.action." +
-						(user ? "openSettings" : "openWorkspaceSettings"),
-					setting?.trim() || "@ext:tryforge.forgevsc",
+					`workbench.action.${user ? "openSettings" : "openWorkspaceSettings"}`,
+					setting?.trim() || "@ext:tryforge.nationvsc",
 				);
 			},
 		),
 
 		// Open Extension Settings (UI)
-		vscode.commands.registerCommand(
-			"forgevsc.openExtensionSettings",
-			async () => {
-				const items = [];
+		vscode.commands.registerCommand("nationvsc.openExtensionSettings", async () => {
+			const items = [];
 
-				if (vscode.workspace.workspaceFolders?.length) {
-					items.push({
-						label: vscode.l10n.t("$(folder) Workspace Settings"),
-						detail: vscode.workspace.name || vscode.l10n.t("Workspace"),
-						description: vscode.l10n.t("Folder"),
-						target: "workbench.action.openWorkspaceSettings",
-					});
-				}
-
+			if (vscode.workspace.workspaceFolders?.length) {
 				items.push({
-					label: vscode.l10n.t("$(account) User Settings"),
-					description: vscode.l10n.t("Global"),
-					target: "workbench.action.openSettings",
+					label: vscode.l10n.t("$(folder) Workspace Settings"),
+					detail: vscode.workspace.name || vscode.l10n.t("Workspace"),
+					description: vscode.l10n.t("Folder"),
+					target: "workbench.action.openWorkspaceSettings",
 				});
+			}
 
-				const choice = await vscode.window.showQuickPick(items, {
-					placeHolder: vscode.l10n.t(
-						"Which extension settings would you like to open?",
-					),
-				});
-				if (!choice) return;
+			items.push({
+				label: vscode.l10n.t("$(account) User Settings"),
+				description: vscode.l10n.t("Global"),
+				target: "workbench.action.openSettings",
+			});
 
-				await vscode.commands.executeCommand(
-					choice.target,
-					"@ext:tryforge.forgevsc",
-				);
-			},
-		),
+			const choice = await vscode.window.showQuickPick(items, {
+				placeHolder: vscode.l10n.t("Which extension settings would you like to open?"),
+			});
+			if (!choice) return;
+
+			await vscode.commands.executeCommand(choice.target, "@ext:tryforge.nationvsc");
+		}),
 	);
 }
 
@@ -77,7 +68,7 @@ export function registerDefaultCommands(ctx: vscode.ExtensionContext) {
 export function registerCommands(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		// Create Config
-		vscode.commands.registerCommand("forgevsc.createConfig", async () => {
+		vscode.commands.registerCommand("nationvsc.createConfig", async () => {
 			const btnOpenSettings = vscode.l10n.t("Open Settings");
 			const action = await vscode.window.showWarningMessage(
 				vscode.l10n.t(
@@ -87,26 +78,20 @@ export function registerCommands(ctx: vscode.ExtensionContext) {
 				vscode.l10n.t("Dismiss"),
 			);
 			if (action === btnOpenSettings) {
-				await vscode.commands.executeCommand(
-					"forgevsc.openSettings",
-					undefined,
-					false,
-				);
+				await vscode.commands.executeCommand("nationvsc.openSettings", undefined, false);
 				return;
 			}
 
 			const folders = vscode.workspace.workspaceFolders;
 			if (!folders?.length) {
-				vscode.window.showErrorMessage(
-					vscode.l10n.t("Open a workspace folder first."),
-				);
+				vscode.window.showErrorMessage(vscode.l10n.t("Open a workspace folder first."));
 				return;
 			}
 
 			const root = folders[0].uri;
 			const path = await findExtensionConfig(root);
 
-			let fileName = ".forgevsc.json";
+			const fileName = ".forgevsc.json";
 			let uri: vscode.Uri;
 
 			if (path) {
@@ -136,14 +121,12 @@ export function registerCommands(ctx: vscode.ExtensionContext) {
 						},
 						{
 							label: vscode.l10n.t("$(folder) VSCode Folder"),
-							detail: ".vscode/" + fileName,
+							detail: `.vscode/${fileName}`,
 							target: vscode.Uri.joinPath(root, ".vscode", fileName),
 						},
 					],
 					{
-						placeHolder: vscode.l10n.t(
-							"Where do you want to create the config file?",
-						),
+						placeHolder: vscode.l10n.t("Where do you want to create the config file?"),
 					},
 				);
 				if (!choice) return;
@@ -158,7 +141,7 @@ export function registerCommands(ctx: vscode.ExtensionContext) {
 			}
 
 			const { enabledWorkspaces, rpc, ...Config } = Defaults;
-			const content = JSON.stringify(Config, null, 2) + "\n";
+			const content = `${JSON.stringify(Config, null, 2)}\n`;
 			const text = new TextEncoder().encode(content);
 			await vscode.workspace.fs.writeFile(uri, text);
 
@@ -173,23 +156,20 @@ export function registerCommands(ctx: vscode.ExtensionContext) {
 		}),
 
 		// Reload Function Metadata
-		vscode.commands.registerCommand(
-			"forgevsc.reloadFunctionMetadata",
-			async () => {
-				await getFunctions(true);
-				vscode.window.showInformationMessage(
-					vscode.l10n.t("Successfully fetched function metadata!"),
-				);
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.reloadFunctionMetadata", async () => {
+			await getFunctions(true);
+			vscode.window.showInformationMessage(
+				vscode.l10n.t("Successfully fetched function metadata!"),
+			);
+		}),
 
 		// Create Guide
-		vscode.commands.registerCommand("forgevsc.createGuide", async () => {
+		vscode.commands.registerCommand("nationvsc.createGuide", async () => {
 			await vscode.env.openExternal(vscode.Uri.parse(DocsUrl));
 		}),
 
 		// Reconnect RPC
-		vscode.commands.registerCommand("forgevsc.reconnectRPC", async () => {
+		vscode.commands.registerCommand("nationvsc.reconnectRPC", async () => {
 			await disconnectRPC();
 			const connected = await connectRPC();
 			if (connected) await updateEditorRPC(vscode.window.activeTextEditor);

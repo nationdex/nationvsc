@@ -25,12 +25,7 @@ export async function validateDocument(
 	collection: vscode.DiagnosticCollection,
 ) {
 	const config = getExtensionConfig();
-	if (
-		!document ||
-		!Languages.includes(document.languageId) ||
-		!config.features.diagnostics
-	)
-		return;
+	if (!document || !Languages.includes(document.languageId) || !config.features.diagnostics) return;
 
 	const diagnostics: vscode.Diagnostic[] = [];
 	const text = document.getText();
@@ -43,11 +38,7 @@ export async function validateDocument(
 	while ((match = ScanRegex.exec(text))) {
 		const index = match.index;
 		const start = document.positionAt(index);
-		if (
-			!locateCodeBlock(document, start) ||
-			isEscaped(text, index) ||
-			isIgnored(text, index)
-		)
+		if (!locateCodeBlock(document, start) || isEscaped(text, index) || isIgnored(text, index))
 			continue;
 
 		const full = match[0];
@@ -117,10 +108,7 @@ export async function validateDocument(
 			diagnostics.push(
 				new vscode.Diagnostic(
 					new vscode.Range(extraStart, extraEnd),
-					vscode.l10n.t(
-						"Function `{0}` has duplicated operators supplied",
-						fn.name,
-					),
+					vscode.l10n.t("Function `{0}` has duplicated operators supplied", fn.name),
 					vscode.DiagnosticSeverity.Error,
 				),
 			);
@@ -128,8 +116,7 @@ export async function validateDocument(
 		}
 
 		const isAttached =
-			matchedText.length === base.length &&
-			matchedText.toLowerCase() === base.toLowerCase();
+			matchedText.length === base.length && matchedText.toLowerCase() === base.toLowerCase();
 		const hasOpeningAttached = hasOpening && isAttached;
 
 		const args = fn.args ?? [];
@@ -182,11 +169,7 @@ export async function validateDocument(
 					diagnostics.push(
 						new vscode.Diagnostic(
 							new vscode.Range(argStart, argEnd),
-							vscode.l10n.t(
-								"Function `{0}` is missing argument `{1}`",
-								fn.name,
-								expected.name,
-							),
+							vscode.l10n.t("Function `{0}` is missing argument `{1}`", fn.name, expected.name),
 							vscode.DiagnosticSeverity.Error,
 						),
 					);

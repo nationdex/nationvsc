@@ -9,7 +9,7 @@ let rpcModule: typeof import("@xhayper/discord-rpc") | null = null;
 
 let connectingInterval: NodeJS.Timeout | null = null;
 let statusBar: vscode.StatusBarItem | null = null;
-let startTimestamp = Date.now();
+const startTimestamp = Date.now();
 
 /**
  * Returns the repository URL of current workspace.
@@ -30,10 +30,7 @@ async function getRepoUrl() {
 		if (!match) return null;
 
 		let url = match[1].trim();
-		url = url
-			.replace("git@", "https://")
-			.replace(".com:", ".com/")
-			.replace(".git", "");
+		url = url.replace("git@", "https://").replace(".com:", ".com/").replace(".git", "");
 
 		return url;
 	} catch {
@@ -64,10 +61,7 @@ async function loadRPC() {
  * @returns
  */
 export function createRPCStatusBar(ctx: vscode.ExtensionContext) {
-	statusBar = vscode.window.createStatusBarItem(
-		vscode.StatusBarAlignment.Left,
-		50,
-	);
+	statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
 	statusBar.show();
 	ctx.subscriptions.push(statusBar);
 }
@@ -87,7 +81,7 @@ export function updateRPCStatusBar(connected: boolean) {
 	} else {
 		statusBar.text = vscode.l10n.t("$(debug-disconnect) Reconnect RPC");
 		statusBar.tooltip = vscode.l10n.t("Reconnect Discord RPC");
-		statusBar.command = "forgevsc.reconnectRPC";
+		statusBar.command = "nationvsc.reconnectRPC";
 	}
 }
 
@@ -103,8 +97,7 @@ function startConnectingAnimation() {
 	let i = 0;
 	connectingInterval = setInterval(() => {
 		if (!statusBar) return;
-		statusBar.text =
-			vscode.l10n.t("$(sync~spin) Connecting RPC") + ".".repeat(i % 4);
+		statusBar.text = vscode.l10n.t("$(sync~spin) Connecting RPC") + ".".repeat(i % 4);
 		statusBar.tooltip = vscode.l10n.t("Connecting to Discord RPC...");
 		i++;
 	}, 400);
@@ -270,7 +263,7 @@ export async function updateEditorRPC(editor?: vscode.TextEditor) {
 		fileName === ".forgevsc.json"
 			? {
 					key: "fvsc-config",
-					text: "ForgeVSC Config",
+					text: "NationVSC Config",
 				}
 			: getLanguageAsset(document.languageId);
 

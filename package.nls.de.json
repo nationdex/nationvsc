@@ -9,7 +9,7 @@
 	"command.openGuideExternal.title": "Leitfaden öffnen (External)",
 	"command.openExtensionSettings.title": "Erweiterungseinstellungen öffnen",
 	"view.guides.title": "Leitfäden",
-	"view.guides.welcome": "Keine Leitfäden verfügbar.\n[$(refresh) Leitfäden aktualisieren](command:forgevsc.reloadGuideMetadata)\n[$(add) Leitfaden erstellen](command:forgevsc.createGuide)",
+	"view.guides.welcome": "Keine Leitfäden verfügbar.\n[$(refresh) Leitfäden aktualisieren](command:nationvsc.reloadGuideMetadata)\n[$(add) Leitfaden erstellen](command:nationvsc.createGuide)",
 	"config.workspace.colors.function.name.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #AC75FF",
 	"config.workspace.colors.function.dollar.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #FE7CEB",
 	"config.workspace.colors.function.semicolon.patternError": "Eingabe muss eine gültige Hex-Farbe sein, z. B. #C586C0",

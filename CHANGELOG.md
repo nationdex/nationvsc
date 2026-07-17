@@ -57,7 +57,7 @@
 - Added advanced guide search
 - Added extension settings
 - Added ability to enable/disable the extension for specific workspaces
-- Added "**ForgeVSC: Open Extension Settings**" command
+- Added "**NationVSC: Open Extension Settings**" command
 
 ### Changed
 - Renamed config property "customFunctionsPath" to `customFunctionPaths`

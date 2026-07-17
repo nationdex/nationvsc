@@ -41,7 +41,7 @@ export interface IMetadataArg {
 	description: string;
 	type: keyof typeof ArgType;
 
-	enum?: any[];
+	enum?: unknown[];
 	enumName?: string;
 
 	/**

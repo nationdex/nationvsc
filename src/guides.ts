@@ -63,7 +63,7 @@ export type GuideFindQuery =
 	  };
 
 const GuideScheme = "forge-guide";
-const FavoriteGuidesKey = "forgevsc.favoriteGuides";
+const FavoriteGuidesKey = "nationvsc.favoriteGuides";
 
 const IconPaths: Record<string, string> = {
 	functions: "symbol-function",
@@ -73,12 +73,7 @@ const IconPaths: Record<string, string> = {
 
 let ExtensionContext: vscode.ExtensionContext;
 
-type GuideNodeKind =
-	| "favorites"
-	| "package"
-	| "category"
-	| "subCategory"
-	| "guide";
+type GuideNodeKind = "favorites" | "package" | "category" | "subCategory" | "guide";
 type GuideNode = {
 	kind: GuideNodeKind;
 	key: string;
@@ -108,11 +103,7 @@ function normalize(value?: string | null) {
 }
 
 function fallbackCategory(value?: string | null, fallback?: string) {
-	return (
-		clean(value) ||
-		(fallback && fallback !== "none" ? fallback + "s" : null) ||
-		"General"
-	);
+	return clean(value) || (fallback && fallback !== "none" ? `${fallback}s` : null) || "General";
 }
 
 function displayGuideTitle(guide: GuideMetadata) {
@@ -170,9 +161,7 @@ function markdownForGuide(guide: GuideMetadata) {
 }
 
 function getFavoriteGuideIds() {
-	return new Set<number>(
-		ExtensionContext.globalState.get<number[]>(FavoriteGuidesKey, []),
-	);
+	return new Set<number>(ExtensionContext.globalState.get<number[]>(FavoriteGuidesKey, []));
 }
 
 async function setFavoriteGuideIds(ids: Iterable<number>) {
@@ -225,10 +214,8 @@ function slugify(value: string | null) {
  * @returns
  */
 export function buildGuideURL(guide: GuideMetadata) {
-	const paths =
-		(guide.title ? "guide" : guide.targetType) +
-		"/" +
-		(slugify(guide.title) || guide.targetName!);
+	const targetName = guide.title ? slugify(guide.title) : (guide.targetName ?? "");
+	const paths = `${guide.title ? "guide" : guide.targetType}/${targetName}`;
 	return (
 		DocsUrl +
 		paths +
@@ -237,31 +224,17 @@ export function buildGuideURL(guide: GuideMetadata) {
 	);
 }
 
-function matchesGuide(
-	guide: GuideMetadata,
-	query: Exclude<GuideFindQuery, string>,
-) {
+function matchesGuide(guide: GuideMetadata, query: Exclude<GuideFindQuery, string>) {
 	if (query.id != null && guide.id !== query.id) return false;
-	if (query.referenceId != null && guide.referenceId !== query.referenceId)
-		return false;
+	if (query.referenceId != null && guide.referenceId !== query.referenceId) return false;
 	if (query.guideType && guide.guideType !== query.guideType) return false;
-	if (
-		query.packageName &&
-		!normalize(guide.packageName).includes(normalize(query.packageName))
-	)
+	if (query.packageName && !normalize(guide.packageName).includes(normalize(query.packageName)))
 		return false;
 	if (query.targetType && guide.targetType !== query.targetType) return false;
-	if (
-		query.targetName != null &&
-		normalize(guide.targetName) !== normalize(query.targetName)
-	)
+	if (query.targetName != null && normalize(guide.targetName) !== normalize(query.targetName))
 		return false;
-	if (query.title != null && normalize(guide.title) !== normalize(query.title))
-		return false;
-	if (
-		query.category != null &&
-		!normalize(guide.category).includes(normalize(query.category))
-	)
+	if (query.title != null && normalize(guide.title) !== normalize(query.title)) return false;
+	if (query.category != null && !normalize(guide.category).includes(normalize(query.category)))
 		return false;
 	if (
 		query.subCategory != null &&
@@ -272,42 +245,28 @@ function matchesGuide(
 	if (query.approvedAfter) {
 		const approvedAfter = new Date(query.approvedAfter).getTime();
 		const approvedAt = new Date(guide.approvedAt).getTime();
-		if (
-			!Number.isNaN(approvedAfter) &&
-			!Number.isNaN(approvedAt) &&
-			approvedAt < approvedAfter
-		)
+		if (!Number.isNaN(approvedAfter) && !Number.isNaN(approvedAt) && approvedAt < approvedAfter)
 			return false;
 	}
 
 	if (query.approvedBefore) {
 		const approvedBefore = new Date(query.approvedBefore).getTime();
 		const approvedAt = new Date(guide.approvedAt).getTime();
-		if (
-			!Number.isNaN(approvedBefore) &&
-			!Number.isNaN(approvedAt) &&
-			approvedAt > approvedBefore
-		)
+		if (!Number.isNaN(approvedBefore) && !Number.isNaN(approvedAt) && approvedAt > approvedBefore)
 			return false;
 	}
 
-	if (query.reviewerId != null && guide.reviewerId !== query.reviewerId)
-		return false;
-	if (query.approverId != null && guide.approver?.id !== query.approverId)
-		return false;
+	if (query.reviewerId != null && guide.reviewerId !== query.reviewerId) return false;
+	if (query.approverId != null && guide.approver?.id !== query.approverId) return false;
 
 	if (
 		query.approverUsername &&
-		!normalize(guide.approver?.username).includes(
-			normalize(query.approverUsername),
-		)
+		!normalize(guide.approver?.username).includes(normalize(query.approverUsername))
 	)
 		return false;
 
 	if (query.contributorId != null) {
-		const hasContributor = (guide.contributors ?? []).some(
-			(x) => x.id === query.contributorId,
-		);
+		const hasContributor = (guide.contributors ?? []).some((x) => x.id === query.contributorId);
 		if (!hasContributor) return false;
 	}
 
@@ -349,10 +308,7 @@ function matchesGuide(
 	return true;
 }
 
-function sortFoundGuides(
-	guides: GuideMetadata[],
-	query?: Exclude<GuideFindQuery, string>,
-) {
+function sortFoundGuides(guides: GuideMetadata[], query?: Exclude<GuideFindQuery, string>) {
 	const sorted = [...guides];
 
 	const dir = query?.sortDir === "asc" ? 1 : -1;
@@ -443,18 +399,14 @@ function collectValues(guides: GuideMetadata[]) {
 		author: [
 			...new Set(
 				guides.flatMap((g) =>
-					g.contributors
-						.filter((c) => c.isOriginalAuthor)
-						.map((c) => c.username),
+					g.contributors.filter((c) => c.isOriginalAuthor).map((c) => c.username),
 				),
 			),
 		],
 		contributor: [
 			...new Set(
 				guides.flatMap((g) =>
-					g.contributors
-						.filter((c) => !c.isOriginalAuthor)
-						.map((c) => c.username),
+					g.contributors.filter((c) => !c.isOriginalAuthor).map((c) => c.username),
 				),
 			),
 		],
@@ -471,10 +423,14 @@ async function searchGuides() {
 		return;
 	}
 
-	const qp = vscode.window.createQuickPick<any>();
-	qp.placeholder = vscode.l10n.t(
-		"Search guides... (e.g. author:Nicky package:ForgeScript)",
-	);
+	type QuickPickItemWithGuide = vscode.QuickPickItem & {
+		guide?: GuideMetadata;
+		action?: string;
+		key?: string;
+		value?: string | null;
+	};
+	const qp = vscode.window.createQuickPick<QuickPickItemWithGuide>();
+	qp.placeholder = vscode.l10n.t("Search guides... (e.g. author:Nicky package:ForgeScript)");
 
 	const values = collectValues(guides);
 	type Keys = keyof typeof values;
@@ -483,7 +439,7 @@ async function searchGuides() {
 		const { text, filters, activeKey, activeValue } = parseGuideQuery(input);
 		const keys = Object.keys(values) as Keys[];
 
-		const query: any = {};
+		const query: Record<string, string> = {};
 		if (text) query.text = text;
 		if (filters.category) query.category = filters.category;
 		if (filters.subcategory) query.subCategory = filters.subcategory;
@@ -493,9 +449,7 @@ async function searchGuides() {
 		if (filters.contributor) query.contributorUsername = filters.contributor;
 		if (filters.approver) query.approverUsername = filters.approver;
 
-		const filteredGuides = guides
-			.filter((g) => matchesGuide(g, query))
-			.sort(sortGuides);
+		const filteredGuides = guides.filter((g) => matchesGuide(g, query)).sort(sortGuides);
 		const guideItems = filteredGuides.map((guide) => ({
 			label: displayGuideTitle(guide),
 			description: guide.packageName,
@@ -512,26 +466,22 @@ async function searchGuides() {
 		const keyItems = keys
 			.filter((key) => !usedKeys.includes(key))
 			.map((key) => ({
-				label: key + ":",
+				label: `${key}:`,
 				description: vscode.l10n.t("Filter"),
 				action: "key",
 				alwaysShow: true,
 				iconPath: new vscode.ThemeIcon("filter"),
 			}));
 
-		let suggestionItems: any[] = [];
+		let suggestionItems: QuickPickItemWithGuide[] = [];
 
-		if (!!activeKey && activeKey && values[activeKey as Keys]) {
+		if (activeKey && activeKey && values[activeKey as Keys]) {
 			const suggestions = values[activeKey as Keys];
 
 			suggestionItems = suggestions
-				.filter(
-					(v) =>
-						!activeValue ||
-						v!.toLowerCase().includes(activeValue.toLowerCase()),
-				)
+				.filter((v) => !activeValue || v?.toLowerCase().includes(activeValue.toLowerCase()))
 				.map((value) => ({
-					label: value!,
+					label: value ?? "",
 					description: `${activeKey}`,
 					action: "set-filter",
 					key: activeKey,
@@ -540,11 +490,7 @@ async function searchGuides() {
 				}));
 		}
 
-		qp.items = [
-			...(activeKey ? [] : keyItems),
-			...suggestionItems,
-			...guideItems,
-		];
+		qp.items = [...(activeKey ? [] : keyItems), ...suggestionItems, ...guideItems];
 	};
 
 	update("");
@@ -561,18 +507,18 @@ async function searchGuides() {
 		if (item.action === "set-filter") {
 			const parts = qp.value.split(/\s+/).filter(Boolean);
 			const newParts = parts.map((p) =>
-				p.startsWith(item.key + ":") ? `${item.key}:${item.value}` : p,
+				p.startsWith(`${item.key}:`) ? `${item.key}:${item.value}` : p,
 			);
 
-			if (!newParts.some((part) => part.startsWith(item.key + ":"))) {
+			if (!newParts.some((part) => part.startsWith(`${item.key}:`))) {
 				newParts.push(`${item.key}:${item.value}`);
 			}
 
-			qp.value = newParts.join(" ") + " ";
+			qp.value = `${newParts.join(" ")} `;
 			return;
 		}
 
-		await vscode.commands.executeCommand("forgevsc.openGuide", item.guide);
+		await vscode.commands.executeCommand("nationvsc.openGuide", item.guide);
 		qp.hide();
 	});
 
@@ -594,18 +540,13 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 			const guide = element.guide;
 			const label = displayGuideTitle(guide);
 
-			const item = new vscode.TreeItem(
-				label,
-				vscode.TreeItemCollapsibleState.None,
-			);
+			const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
 			item.id = `guide:${element.key}`;
-			item.contextValue = isFavoriteGuide(guide.id)
-				? "guide.favorite"
-				: "guide";
+			item.contextValue = isFavoriteGuide(guide.id) ? "guide.favorite" : "guide";
 			item.iconPath = new vscode.ThemeIcon("book");
 			if (element.isFavorite) item.description = guide.packageName;
 			item.command = {
-				command: "forgevsc.openGuide",
+				command: "nationvsc.openGuide",
 				title: "",
 				arguments: [guide],
 			};
@@ -614,10 +555,7 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 		}
 
 		if (element.kind === "favorites") {
-			const item = new vscode.TreeItem(
-				element.label,
-				vscode.TreeItemCollapsibleState.Expanded,
-			);
+			const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Expanded);
 			item.id = "guides:favorites";
 			item.contextValue = "favorites";
 			item.tooltip = vscode.l10n.t("Favorited Guides");
@@ -625,12 +563,9 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 			return item;
 		}
 
-		const item = new vscode.TreeItem(
-			element.label,
-			vscode.TreeItemCollapsibleState.Collapsed,
-		);
+		const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Collapsed);
 
-		let iconPath;
+		let iconPath: string;
 		if (element.kind === "package") iconPath = "package";
 		else if (element.kind === "category" && element.category)
 			iconPath = IconPaths[element.category] || "folder";
@@ -648,9 +583,7 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 		const guides = await getGuides();
 
 		if (!element) {
-			const packages = [
-				...new Set(guides.map((x) => clean(x.packageName)).filter(Boolean)),
-			]
+			const packages = [...new Set(guides.map((x) => clean(x.packageName)).filter(Boolean))]
 				.sort(compareText)
 				.map<GuideNode>((pkg) => ({
 					kind: "package",
@@ -686,13 +619,9 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 		}
 
 		if (element.kind === "package") {
-			const packageGuides = guides.filter(
-				(x) => clean(x.packageName) === element.packageName,
-			);
+			const packageGuides = guides.filter((x) => clean(x.packageName) === element.packageName);
 			const categories = [
-				...new Set(
-					packageGuides.map((x) => fallbackCategory(x.category, x.targetType)),
-				),
+				...new Set(packageGuides.map((x) => fallbackCategory(x.category, x.targetType))),
 			]
 				.sort(compareText)
 				.map<GuideNode>((category) => ({
@@ -709,15 +638,10 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 		if (element.kind === "category") {
 			const categoryGuides = guides
 				.filter((x) => clean(x.packageName) === element.packageName)
-				.filter(
-					(x) =>
-						fallbackCategory(x.category, x.targetType) === element.category,
-				);
+				.filter((x) => fallbackCategory(x.category, x.targetType) === element.category);
 
 			const subCategories = [
-				...new Set(
-					categoryGuides.map((x) => clean(x.subCategory)).filter(Boolean),
-				),
+				...new Set(categoryGuides.map((x) => clean(x.subCategory)).filter(Boolean)),
 			]
 				.sort(compareText)
 				.map<GuideNode>((subCategory) => ({
@@ -747,10 +671,7 @@ class ForgeGuidesProvider implements vscode.TreeDataProvider<GuideNode> {
 		if (element.kind === "subCategory") {
 			return guides
 				.filter((x) => clean(x.packageName) === element.packageName)
-				.filter(
-					(x) =>
-						fallbackCategory(x.category, x.targetType) === element.category,
-				)
+				.filter((x) => fallbackCategory(x.category, x.targetType) === element.category)
 				.filter((x) => clean(x.subCategory) === element.subCategory)
 				.sort(sortGuides)
 				.map<GuideNode>((guide) => ({
@@ -776,9 +697,7 @@ export function registerGuidePreview(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(GuideScheme, {
 			async provideTextDocumentContent(uri) {
-				const raw = decodeURIComponent(
-					uri.path.replace(/^\//, "").replace(/\.md$/i, ""),
-				);
+				const raw = decodeURIComponent(uri.path.replace(/^\//, "").replace(/\.md$/i, ""));
 
 				let guide: GuideMetadata | null = null;
 				const id = Number(raw);
@@ -787,9 +706,7 @@ export function registerGuidePreview(ctx: vscode.ExtensionContext) {
 				if (!guide) guide = await findGuide(raw);
 
 				if (!guide) {
-					return vscode.l10n.t(
-						"# 404: Guide Not Found\n\nNo metadata was found for this guide.",
-					);
+					return vscode.l10n.t("# 404: Guide Not Found\n\nNo metadata was found for this guide.");
 				}
 
 				return markdownForGuide(guide);
@@ -798,7 +715,7 @@ export function registerGuidePreview(ctx: vscode.ExtensionContext) {
 
 		// Preview Guide
 		vscode.commands.registerCommand(
-			"forgevsc.previewGuide",
+			"nationvsc.previewGuide",
 			async (input: GuideMetadata | number | string) => {
 				let guide: GuideMetadata | null = null;
 
@@ -810,32 +727,23 @@ export function registerGuidePreview(ctx: vscode.ExtensionContext) {
 					const trimmed = input.trim();
 					const id = Number(trimmed);
 
-					guide = !Number.isNaN(id)
-						? await findGuide({ id })
-						: await findGuide(trimmed);
+					guide = !Number.isNaN(id) ? await findGuide({ id }) : await findGuide(trimmed);
 				}
 
 				if (!guide) {
-					vscode.window.showErrorMessage(
-						vscode.l10n.t("No guide found for this function."),
-					);
+					vscode.window.showErrorMessage(vscode.l10n.t("No guide found for this function."));
 					return;
 				}
 
-				const uri = vscode.Uri.parse(
-					`${GuideScheme}:/${encodeURIComponent(String(guide.id))}.md`,
-				);
+				const uri = vscode.Uri.parse(`${GuideScheme}:/${encodeURIComponent(String(guide.id))}.md`);
 				await vscode.commands.executeCommand("markdown.showPreview", uri);
 			},
 		),
 
 		// Open Guide
-		vscode.commands.registerCommand(
-			"forgevsc.openGuide",
-			async (guide: GuideMetadata) => {
-				await vscode.commands.executeCommand("forgevsc.previewGuide", guide);
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.openGuide", async (guide: GuideMetadata) => {
+			await vscode.commands.executeCommand("nationvsc.previewGuide", guide);
+		}),
 	);
 }
 
@@ -847,7 +755,7 @@ export function registerGuidesView(ctx: vscode.ExtensionContext) {
 	ExtensionContext = ctx;
 
 	const provider = new ForgeGuidesProvider();
-	const tree = vscode.window.createTreeView("forge.guidesView", {
+	const tree = vscode.window.createTreeView("nation.guidesView", {
 		treeDataProvider: provider,
 		showCollapseAll: true,
 	});
@@ -855,59 +763,41 @@ export function registerGuidesView(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		tree,
 		// Favorite Guide
-		vscode.commands.registerCommand(
-			"forgevsc.favoriteGuide",
-			async (node: GuideNode) => {
-				if (!node.guide) return;
-				await addFavoriteGuide(node.guide.id);
-				provider.refresh();
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.favoriteGuide", async (node: GuideNode) => {
+			if (!node.guide) return;
+			await addFavoriteGuide(node.guide.id);
+			provider.refresh();
+		}),
 
 		// Unfavorite Guide
-		vscode.commands.registerCommand(
-			"forgevsc.unfavoriteGuide",
-			async (node: GuideNode) => {
-				if (!node.guide) return;
-				await removeFavoriteGuide(node.guide.id);
-				provider.refresh();
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.unfavoriteGuide", async (node: GuideNode) => {
+			if (!node.guide) return;
+			await removeFavoriteGuide(node.guide.id);
+			provider.refresh();
+		}),
 
 		// Open Guide Externally
-		vscode.commands.registerCommand(
-			"forgevsc.openGuideExternal",
-			async (node: GuideNode) => {
-				if (!node?.guide) return;
-				await vscode.env.openExternal(
-					vscode.Uri.parse(buildGuideURL(node.guide)),
-				);
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.openGuideExternal", async (node: GuideNode) => {
+			if (!node?.guide) return;
+			await vscode.env.openExternal(vscode.Uri.parse(buildGuideURL(node.guide)));
+		}),
 
 		// Search Guides
-		vscode.commands.registerCommand("forgevsc.searchGuides", async () => {
+		vscode.commands.registerCommand("nationvsc.searchGuides", async () => {
 			try {
 				await searchGuides();
 			} catch (err) {
 				Logger?.error(`Guide search failed: ${String(err)}`);
-				vscode.window.showErrorMessage(
-					vscode.l10n.t("Could not open guide search."),
-				);
+				vscode.window.showErrorMessage(vscode.l10n.t("Could not open guide search."));
 			}
 		}),
 
 		// Reload Guide Metadata
-		vscode.commands.registerCommand(
-			"forgevsc.reloadGuideMetadata",
-			async () => {
-				const guides = await getGuides(true);
-				provider.refresh();
-				if (guides.length)
-					vscode.window.showInformationMessage(
-						vscode.l10n.t("Successfully fetched guide metadata!"),
-					);
-			},
-		),
+		vscode.commands.registerCommand("nationvsc.reloadGuideMetadata", async () => {
+			const guides = await getGuides(true);
+			provider.refresh();
+			if (guides.length)
+				vscode.window.showInformationMessage(vscode.l10n.t("Successfully fetched guide metadata!"));
+		}),
 	);
 }

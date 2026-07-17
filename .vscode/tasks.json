@@ -4,8 +4,9 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "watch",
+			"type": "shell",
+			"command": "bun",
+			"args": ["run", "watch"],
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {
@@ -17,8 +18,9 @@
 			}
 		},
 		{
-			"type": "npm",
-			"script": "compile",
+			"type": "shell",
+			"command": "bun",
+			"args": ["run", "compile"],
 			"problemMatcher": "$tsc",
 			"presentation": {
 				"reveal": "never"

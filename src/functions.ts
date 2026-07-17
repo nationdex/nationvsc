@@ -1,7 +1,7 @@
 import ts from "typescript";
 import * as vscode from "vscode";
 import { getFunctions, toArray } from ".";
-import { ArgType, IMetadataArg, IMetadataFunction } from "./types";
+import { ArgType, type IMetadataArg, type IMetadataFunction } from "./types";
 
 export type FunctionLocation = {
 	file: string;
@@ -46,10 +46,7 @@ function getEnumName(node: ts.Expression) {
 
 function resolveArgType(node: ts.Expression) {
 	if (ts.isPropertyAccessExpression(node)) {
-		if (
-			ts.isIdentifier(node.expression) &&
-			node.expression.text === "ArgType"
-		) {
+		if (ts.isIdentifier(node.expression) && node.expression.text === "ArgType") {
 			return node.name.text;
 		}
 		return node.name.text;
@@ -70,7 +67,7 @@ function parseArgType(node: ts.Expression) {
 
 function normalizeParam(partial: Partial<CustomFunctionParamMetadata>) {
 	if (!partial.name) return undefined;
-	let param = {} as CustomFunctionParamMetadata;
+	const param = {} as CustomFunctionParamMetadata;
 
 	param.name = partial.name;
 	param.type = partial.type ?? DefaultParam.type;
@@ -92,15 +89,14 @@ function getArgCall(node: ts.CallExpression) {
 	if (!ts.isPropertyAccessExpression(node.expression)) return undefined;
 
 	const access = node.expression;
-	if (!ts.isIdentifier(access.expression) || access.expression.text !== "Arg")
-		return undefined;
+	if (!ts.isIdentifier(access.expression) || access.expression.text !== "Arg") return undefined;
 
 	const method = access.name.text;
 	const match = method.match(/^(optional|required|rest)(.+)$/);
 	if (!match) return undefined;
 
 	const [, mode, rawType] = match;
-	let type = rawType as ArgTypeKey;
+	const type = rawType as ArgTypeKey;
 
 	const param: Partial<CustomFunctionParamMetadata> = {
 		required: mode === "required",
@@ -118,8 +114,7 @@ function getArgCall(node: ts.CallExpression) {
 	param.name = name && ts.isStringLiteral(name) ? name.text : undefined;
 
 	const desc = node.arguments[offset + 1];
-	param.description =
-		desc && ts.isStringLiteral(desc) ? desc.text : DefaultParam.description;
+	param.description = desc && ts.isStringLiteral(desc) ? desc.text : DefaultParam.description;
 
 	if (mode === "rest") {
 		const req = node.arguments[offset + 2];
@@ -147,7 +142,7 @@ function getArgCall(node: ts.CallExpression) {
 
 function getParamObject(node: ts.Expression) {
 	if (!ts.isObjectLiteralExpression(node)) return undefined;
-	let param: Partial<CustomFunctionParamMetadata> = {};
+	const param: Partial<CustomFunctionParamMetadata> = {};
 
 	for (const prop of node.properties) {
 		if (!ts.isPropertyAssignment(prop)) continue;
@@ -155,14 +150,11 @@ function getParamObject(node: ts.Expression) {
 		const key = ts.isIdentifier(prop.name) ? prop.name.text : prop.name.text;
 
 		if (key === "name") param.name = getString(prop.initializer);
-		else if (key === "type")
-			param.type = parseArgType(prop.initializer) ?? "String";
+		else if (key === "type") param.type = parseArgType(prop.initializer) ?? "String";
 		else if (key === "required") param.required = getBoolean(prop.initializer);
 		else if (key === "rest") param.rest = getBoolean(prop.initializer);
-		else if (key === "condition")
-			param.condition = getBoolean(prop.initializer);
-		else if (key === "description")
-			param.description = getString(prop.initializer);
+		else if (key === "condition") param.condition = getBoolean(prop.initializer);
+		else if (key === "description") param.description = getString(prop.initializer);
 		else if (key === "enum") param.enumName = getEnumName(prop.initializer);
 	}
 
@@ -206,17 +198,13 @@ function getOutput(node: ts.Expression) {
 }
 
 function getPropertyKey(name: ts.PropertyName) {
-	if (
-		ts.isIdentifier(name) ||
-		ts.isStringLiteral(name) ||
-		ts.isNoSubstitutionTemplateLiteral(name)
-	)
+	if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name))
 		return name.text;
 	return undefined;
 }
 
 function readMetadata(obj: ts.ObjectLiteralExpression) {
-	let fn: Partial<CustomFunctionMetadata> = {};
+	const fn: Partial<CustomFunctionMetadata> = {};
 
 	for (const prop of obj.properties) {
 		if (!ts.isPropertyAssignment(prop)) continue;
@@ -226,25 +214,19 @@ function readMetadata(obj: ts.ObjectLiteralExpression) {
 
 		if (key === "name") {
 			const name = getString(prop.initializer);
-			if (name)
-				fn.name = (name.startsWith("$") ? name : "$" + name) as `$${string}`;
-		} else if (key === "params" || key === "args")
-			fn.args = getParams(prop.initializer);
+			if (name) fn.name = (name.startsWith("$") ? name : `$${name}`) as `$${string}`;
+		} else if (key === "params" || key === "args") fn.args = getParams(prop.initializer);
 		else if (key === "brackets") fn.brackets = getBoolean(prop.initializer);
 		else if (key === "unwrap") fn.unwrap = getBoolean(prop.initializer);
 		else if (key === "output") fn.output = getOutput(prop.initializer);
-		else if (key === "description")
-			fn.description = getString(prop.initializer);
+		else if (key === "description") fn.description = getString(prop.initializer);
 		else if (key === "deprecated") fn.deprecated = getBoolean(prop.initializer);
-		else if (key === "experimental")
-			fn.experimental = getBoolean(prop.initializer);
+		else if (key === "experimental") fn.experimental = getBoolean(prop.initializer);
 	}
 
 	if (!fn.name) return null;
-	if (fn.unwrap === undefined)
-		fn.unwrap = !!fn.args?.length && !fn.firstParamCondition;
-	if (fn.brackets === undefined)
-		fn.brackets = fn.args?.length ? true : undefined;
+	if (fn.unwrap === undefined) fn.unwrap = !!fn.args?.length && !fn.firstParamCondition;
+	if (fn.brackets === undefined) fn.brackets = fn.args?.length ? true : undefined;
 	if (fn.description === undefined) fn.description = "Custom function";
 
 	return fn as CustomFunctionMetadata;
@@ -376,10 +358,7 @@ export async function getCustomFunctionLocation(name: string) {
 	const fn = all.find((x) => x.name.toLowerCase() === name.toLowerCase());
 	if (!fn?.location) return;
 
-	return new vscode.Location(
-		vscode.Uri.file(fn.location.file),
-		fn.location.position,
-	);
+	return new vscode.Location(vscode.Uri.file(fn.location.file), fn.location.position);
 }
 
 function extractCustomFunctions(text: string, fileName: string) {
@@ -390,13 +369,7 @@ function extractCustomFunctions(text: string, fileName: string) {
 				? ts.ScriptKind.JSX
 				: ts.ScriptKind.JS;
 
-	const sf = ts.createSourceFile(
-		fileName,
-		text,
-		ts.ScriptTarget.Latest,
-		true,
-		kind,
-	);
+	const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, kind);
 	const bindings = collectBindings(sf);
 	const found: CustomFunctionMetadata[] = [];
 
@@ -405,9 +378,7 @@ function extractCustomFunctions(text: string, fileName: string) {
 
 		for (const meta of resolved) {
 			const target = unwrapExpression(expr);
-			const { line, character } = sf.getLineAndCharacterOfPosition(
-				target.getStart(),
-			);
+			const { line, character } = sf.getLineAndCharacterOfPosition(target.getStart());
 
 			meta.location = {
 				file: fileName,
@@ -423,17 +394,12 @@ function extractCustomFunctions(text: string, fileName: string) {
 		if (ts.isExportAssignment(node)) pushResolved(node.expression);
 
 		// module.exports = ...
-		if (
-			ts.isBinaryExpression(node) &&
-			node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-		) {
+		if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
 			const leftChain = getPropertyChain(node.left);
 			if (!leftChain) return;
 
-			const isModuleExports =
-				leftChain[0] === "module" && leftChain[1] === "exports";
-			const isExportsDefault =
-				leftChain[0] === "exports" && leftChain[1] === "default";
+			const isModuleExports = leftChain[0] === "module" && leftChain[1] === "exports";
+			const isExportsDefault = leftChain[0] === "exports" && leftChain[1] === "default";
 
 			if (isModuleExports || isExportsDefault) pushResolved(node.right);
 		}
@@ -479,8 +445,9 @@ function resolveWorkspacePath(p: string) {
 async function safeReadDirectory(uri: vscode.Uri) {
 	try {
 		return await vscode.workspace.fs.readDirectory(uri);
-	} catch (e: any) {
-		if (e?.code === "FileNotFound" || e?.code === "ENOENT") return [];
+	} catch (e: unknown) {
+		const error = e as { code?: string };
+		if (error?.code === "FileNotFound" || error?.code === "ENOENT") return [];
 		throw e;
 	}
 }
@@ -507,9 +474,7 @@ async function collectFiles(dir: vscode.Uri, out: vscode.Uri[] = []) {
  * @param customFunctionsPath The custom functions folder path.
  * @returns
  */
-export async function loadCustomFunctions(
-	customFunctionsPath: string | string[],
-) {
+export async function loadCustomFunctions(customFunctionsPath: string | string[]) {
 	customFunctionsPath = toArray(customFunctionsPath);
 	if (!customFunctionsPath.length) return [];
 

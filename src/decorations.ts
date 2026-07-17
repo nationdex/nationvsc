@@ -24,8 +24,7 @@ let decoOpSilent: vscode.TextEditorDecorationType | null = null;
 let decoOpCount: vscode.TextEditorDecorationType | null = null;
 let decoOpCountDelim: vscode.TextEditorDecorationType | null = null;
 
-export const HexRegex =
-	/^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+export const HexRegex = /^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 /**
  * Checks whether the input is a valid hex color.
@@ -46,7 +45,7 @@ function resolveColor(input: unknown, fallback: string) {
 	if (typeof input !== "string") return fallback;
 	const hex = input.trim();
 	if (!isValidHex(hex)) return fallback;
-	return hex.startsWith("#") ? hex : "#" + hex;
+	return hex.startsWith("#") ? hex : `#${hex}`;
 }
 
 let lastDecoKey = "";
@@ -67,10 +66,7 @@ function ensureDecorations() {
 	const negColor = resolveColor(colors.operators?.negation, dollarColor);
 	const silentColor = resolveColor(colors.operators?.silent, dollarColor);
 	const countColor = resolveColor(colors.operators?.count, dollarColor);
-	const countDelimColor = resolveColor(
-		colors.operators?.countDelimiter,
-		countColor,
-	);
+	const countDelimColor = resolveColor(colors.operators?.countDelimiter, countColor);
 
 	const key = [
 		fnColor,
@@ -175,17 +171,9 @@ async function applyDecorations(editor: vscode.TextEditor) {
 
 		const nameStart = matchIndex + prefixMatch.length;
 		fnRanges.push(
-			new vscode.Range(
-				doc.positionAt(nameStart),
-				doc.positionAt(nameStart + nameLength),
-			),
+			new vscode.Range(doc.positionAt(nameStart), doc.positionAt(nameStart + nameLength)),
 		);
-		dollarRanges.push(
-			new vscode.Range(
-				doc.positionAt(matchIndex),
-				doc.positionAt(matchIndex + 1),
-			),
-		);
+		dollarRanges.push(new vscode.Range(doc.positionAt(matchIndex), doc.positionAt(matchIndex + 1)));
 
 		const prefix = prefixMatch;
 		for (let i = 0; i < prefix.length; i++) {
@@ -193,13 +181,9 @@ async function applyDecorations(editor: vscode.TextEditor) {
 			const abs = matchIndex + i;
 
 			if (c === "!") {
-				opNegRanges.push(
-					new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)),
-				);
+				opNegRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
 			} else if (c === "#") {
-				opSilentRanges.push(
-					new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)),
-				);
+				opSilentRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
 			} else if (c === "@") {
 				const j = prefix.indexOf("@[", i);
 				const k = j !== -1 ? prefix.indexOf("]", j) : -1;
@@ -211,30 +195,16 @@ async function applyDecorations(editor: vscode.TextEditor) {
 					if (hasDelim) {
 						const delimAbs = absStart + 2;
 						opCountRanges.push(
-							new vscode.Range(
-								doc.positionAt(absStart),
-								doc.positionAt(absStart + 2),
-							),
+							new vscode.Range(doc.positionAt(absStart), doc.positionAt(absStart + 2)),
 						);
 						opCountRanges.push(
-							new vscode.Range(
-								doc.positionAt(absEnd - 1),
-								doc.positionAt(absEnd),
-							),
+							new vscode.Range(doc.positionAt(absEnd - 1), doc.positionAt(absEnd)),
 						);
 						opCountDelimRanges.push(
-							new vscode.Range(
-								doc.positionAt(delimAbs),
-								doc.positionAt(delimAbs + 1),
-							),
+							new vscode.Range(doc.positionAt(delimAbs), doc.positionAt(delimAbs + 1)),
 						);
 					} else {
-						opCountRanges.push(
-							new vscode.Range(
-								doc.positionAt(absStart),
-								doc.positionAt(absEnd),
-							),
-						);
+						opCountRanges.push(new vscode.Range(doc.positionAt(absStart), doc.positionAt(absEnd)));
 					}
 				}
 				break;
@@ -253,17 +223,14 @@ async function applyDecorations(editor: vscode.TextEditor) {
 
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
-			const meta =
-				fn.args?.[Math.min(i, fn.args.at(-1)?.rest ? fn.args.length - 1 : i)];
+			const meta = fn.args?.[Math.min(i, fn.args.at(-1)?.rest ? fn.args.length - 1 : i)];
 			if (!meta?.condition) continue;
 
 			const op = findConditionOperator(arg.value);
 			if (op) {
 				const start = openIndex + 1 + arg.start + op.start;
 				const end = start + op.operator.length;
-				condRanges.push(
-					new vscode.Range(doc.positionAt(start), doc.positionAt(end)),
-				);
+				condRanges.push(new vscode.Range(doc.positionAt(start), doc.positionAt(end)));
 			}
 		}
 
@@ -275,9 +242,7 @@ async function applyDecorations(editor: vscode.TextEditor) {
 			if (ch === "[" && isOpeningBracket(text, i)) depth++;
 			else if (ch === "]" && depth > 0 && !escaped) depth--;
 			else if (ch === ";" && depth === 0 && !escaped) {
-				semiRanges.push(
-					new vscode.Range(doc.positionAt(i), doc.positionAt(i + 1)),
-				);
+				semiRanges.push(new vscode.Range(doc.positionAt(i), doc.positionAt(i + 1)));
 			}
 		}
 	}

@@ -27,13 +27,8 @@ export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 			{
 				async provideCompletionItems(document, position) {
 					const config = getExtensionConfig();
-					if (
-						!locateCodeBlock(document, position) ||
-						!config.features.autocompletion
-					)
-						return;
-					if (isIgnored(document.getText(), document.offsetAt(position)))
-						return;
+					if (!locateCodeBlock(document, position) || !config.features.autocompletion) return;
+					if (isIgnored(document.getText(), document.offsetAt(position))) return;
 
 					const line = document.lineAt(position).text;
 					const before = line.substring(0, position.character);
@@ -50,19 +45,15 @@ export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 								const names = [fn.name, ...(fn.aliases ?? [])];
 
 								return names.map((name) => {
-									const item = new vscode.CompletionItem(
-										name,
-										vscode.CompletionItemKind.Function,
-									);
+									const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Function);
 
 									item.insertText = name;
 									item.detail = generateUsage(fn);
 									item.documentation = new vscode.MarkdownString(
-										`${(fn.deprecated ? `🛑 **${vscode.l10n.t("Deprecated")}**\n` : fn.experimental ? `⚠️ **${vscode.l10n.t("Experimental")}**\n` : "") + "\n" + fn.description}${fn.version ? `\n\n*@${vscode.l10n.t("since")}* — \`${getPackageName(fn.source) ?? ""} v${fn.version}\`` : ""}`,
+										`${`${fn.deprecated ? `🛑 **${vscode.l10n.t("Deprecated")}**\n` : fn.experimental ? `⚠️ **${vscode.l10n.t("Experimental")}**\n` : ""}\n${fn.description}`}${fn.version ? `\n\n*@${vscode.l10n.t("since")}* — \`${getPackageName(fn.source) ?? ""} v${fn.version}\`` : ""}`,
 									);
 									item.kind = vscode.CompletionItemKind.Function;
-									if (fn.deprecated)
-										item.tags = [vscode.CompletionItemTag.Deprecated];
+									if (fn.deprecated) item.tags = [vscode.CompletionItemTag.Deprecated];
 
 									const startPos = position.translate(0, -match[0].length);
 									item.range = new vscode.Range(startPos, position);
@@ -101,15 +92,12 @@ export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 
 								const activeArg = args[argIndex];
 								const enumValues =
-									activeArg?.enum ||
-									(activeArg.type === "Boolean"
-										? ["true", "false"]
-										: undefined);
+									activeArg?.enum || (activeArg.type === "Boolean" ? ["true", "false"] : undefined);
 
 								if (enumValues) {
 									const currentValue = parts[activeIndex]?.value ?? "";
 
-									return enumValues.map((val: string) => {
+									return (enumValues as string[]).map((val) => {
 										const item = new vscode.CompletionItem(
 											val,
 											vscode.CompletionItemKind.EnumMember,

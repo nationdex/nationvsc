@@ -74,7 +74,7 @@ let cached: Required<IExtensionConfig> = Defaults;
  * @returns
  */
 export function getSettingsConfig() {
-	const vs = vscode.workspace.getConfiguration("forgevsc");
+	const vs = vscode.workspace.getConfiguration("nationvsc");
 
 	return {
 		global: {
@@ -96,9 +96,7 @@ export function getSettingsConfig() {
 					negation: vs.get<string>("workspace.colors.operators.negation"),
 					silent: vs.get<string>("workspace.colors.operators.silent"),
 					count: vs.get<string>("workspace.colors.operators.count"),
-					countDelimiter: vs.get<string>(
-						"workspace.colors.operators.countDelimiter",
-					),
+					countDelimiter: vs.get<string>("workspace.colors.operators.countDelimiter"),
 				},
 			},
 			features: {
@@ -170,9 +168,7 @@ export async function loadExtensionConfig() {
 	cached = {
 		enabledWorkspaces: vs.global.enabledWorkspaces ?? [],
 		customFunctionPaths: toArray(
-			file.customFunctionPaths ??
-				vs.workspace.customFunctionPaths ??
-				Defaults.customFunctionPaths,
+			file.customFunctionPaths ?? vs.workspace.customFunctionPaths ?? Defaults.customFunctionPaths,
 		),
 		additionalPackages: Array.from(
 			new Set([
@@ -200,13 +196,9 @@ export async function loadExtensionConfig() {
 		},
 		features: {
 			folding:
-				file.features?.folding ??
-				vs.workspace.features?.folding ??
-				Defaults.features.folding,
+				file.features?.folding ?? vs.workspace.features?.folding ?? Defaults.features.folding,
 			hoverInfo:
-				file.features?.hoverInfo ??
-				vs.workspace.features?.hoverInfo ??
-				Defaults.features.hoverInfo,
+				file.features?.hoverInfo ?? vs.workspace.features?.hoverInfo ?? Defaults.features.hoverInfo,
 			suggestions:
 				file.features?.suggestions ??
 				vs.workspace.features?.suggestions ??

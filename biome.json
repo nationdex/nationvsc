@@ -1,13 +1,54 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
-	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-	"files": { "ignoreUnknown": false },
-	"formatter": { "enabled": true, "indentStyle": "tab" },
-	"linter": { "enabled": true, "rules": { "preset": "none" } },
-	"javascript": { "formatter": { "quoteStyle": "double" }, "globals": [] },
-	"overrides": [{ "includes": ["**/*.ts"] }],
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"maxSize": 5242880,
+		"includes": ["src/**/*.ts", "scripts/**/*.mjs", "*.json", "!out", "!node_modules"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 100
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"useNodejsImportProtocol": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noAssignInExpressions": "off",
+				"noConfusingVoidType": "off"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"semicolons": "always",
+			"trailingCommas": "all"
+		},
+		"globals": []
+	},
+	"json": {
+		"formatter": {
+			"indentStyle": "tab",
+			"trailingCommas": "none"
+		}
+	},
 	"assist": {
 		"enabled": true,
-		"actions": { "source": { "organizeImports": "on" } }
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
 	}
 }

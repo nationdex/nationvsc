@@ -1,6 +1,6 @@
 <div align="center">
 
-<img height="150" width="150" src="https://raw.githubusercontent.com/tryforge/ForgeVSC/main/assets/Nationdex.png" alt="ForgeVSC">
+<img height="150" width="150" src="https://raw.githubusercontent.com/nationdex/nationvsc/main/assets/Nationdex.png" alt="Nationdex">
 
 # NationVSC
 Fork of BotForge's Official Visual Studio Code Extension for ForgeScript.

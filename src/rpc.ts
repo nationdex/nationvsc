@@ -1,6 +1,6 @@
 import type { Client, SetActivity } from "@xhayper/discord-rpc";
 import * as vscode from "vscode";
-import { DocsUrl, Logger } from ".";
+import { Logger } from ".";
 
 const CLIENT_ID = "1511962883993374791";
 
@@ -174,8 +174,9 @@ export async function updateRPC(options: SetActivity) {
 	if (!rpc?.user) return;
 
 	options.largeImageKey ||= "forge";
-	options.largeImageText ||= "BotForge";
-	options.largeImageUrl ||= DocsUrl;
+	options.largeImageText ||= "NationVSC";
+	options.largeImageUrl ||=
+		"https://raw.githubusercontent.com/nationdex/nationvsc/main/assets/Nationdex.png";
 
 	const repoUrl = await getRepoUrl();
 	if (repoUrl) {

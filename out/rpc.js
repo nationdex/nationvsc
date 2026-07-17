@@ -196,8 +196,9 @@ async function updateRPC(options) {
     if (!rpc?.user)
         return;
     options.largeImageKey ||= "forge";
-    options.largeImageText ||= "BotForge";
-    options.largeImageUrl ||= _1.DocsUrl;
+    options.largeImageText ||= "NationVSC";
+    options.largeImageUrl ||=
+        "https://raw.githubusercontent.com/nationdex/nationvsc/main/assets/Nationdex.png";
     const repoUrl = await getRepoUrl();
     if (repoUrl) {
         options.buttons = [

@@ -64,8 +64,10 @@ exports.bracketDepth = bracketDepth;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const _1 = require(".");
+const METADATA_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 let functions = null;
 let functionsPromise = null;
+let functionLookupMap = null;
 let guides = null;
 let guidesPromise = null;
 const paths = new Map();
@@ -87,6 +89,9 @@ exports.LooseFunctionNameRegex = new RegExp(String.raw `^\$${exports.LooseOperat
 exports.LooseFunctionPrefixRegex = new RegExp(String.raw `^\$${exports.LooseOperatorChain}`);
 exports.ConditionOperatorRegex = /==|!=|<=|>=|<|>/g;
 exports.InvalidOperatorRegex = /#.*!|@\[\].*!|@\[\].*#/;
+const EscapeFunctionRegex = new RegExp(String.raw `\$${exports.OperatorChain}(?:c|escapeCode|esc)\[`, "gi");
+const CodeBlockRegex = /code:\s*(["`'])/g;
+const FunctionHeadTailRegex = new RegExp(`${exports.FunctionRegex.source}$`);
 exports.DocsUrl = "https://docs.botforge.org/";
 exports.Languages = ["javascript", "typescript", "javascriptreact", "typescriptreact"];
 exports.FunctionsStorageKey = "nationvsc.functionsCache.v1";
@@ -144,6 +149,10 @@ async function activate(ctx) {
     exports.Logger = vscode.window.createOutputChannel(name, { log: true });
     ctx.subscriptions.push(exports.Logger);
     (0, _1.registerDefaultCommands)(ctx);
+    if (vscode.env.uiKind === vscode.UIKind.Desktop) {
+        const lsp = await import("./lsp.js");
+        lsp.registerLSPCommands(ctx);
+    }
     if (!isEnabled) {
         exports.Logger.info("Extension is disabled for this workspace.");
         const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -176,7 +185,7 @@ async function initialize(ctx) {
     const config = (0, _1.getExtensionConfig)();
     if (vscode.env.uiKind === vscode.UIKind.Desktop && config.rpc.enabled) {
         (0, _1.createRPCStatusBar)(ctx);
-        await (0, _1.registerRPC)(ctx);
+        (0, _1.registerRPC)(ctx).catch((err) => exports.Logger.warn(`RPC init deferred: ${String(err)}`));
     }
     (0, _1.registerCommands)(ctx);
     (0, _1.registerGuidePreview)(ctx);
@@ -187,6 +196,12 @@ async function initialize(ctx) {
     (0, _1.registerAutocompletion)(ctx);
     (0, _1.registerSignatureHelp)(ctx);
     (0, _1.registerSuggestions)(ctx);
+    if (vscode.env.uiKind === vscode.UIKind.Desktop) {
+        const lsp = await import("./lsp.js");
+        if (lsp.hasForgeLSPConfig()) {
+            lsp.startLSP(ctx).catch((err) => exports.Logger.error(`Failed to start ForgeLSP: ${String(err)}`));
+        }
+    }
     const diagnostics = vscode.languages.createDiagnosticCollection("forge");
     ctx.subscriptions.push(diagnostics);
     for (const editor of vscode.window.visibleTextEditors) {
@@ -202,20 +217,17 @@ async function initialize(ctx) {
             catch { }
         }
     }, 0);
+    let validateTimer;
     ctx.subscriptions.push(vscode.workspace.onDidChangeTextDocument((event) => {
-        (0, _1.validateDocument)(event.document, diagnostics);
-        const editor = vscode.window.activeTextEditor;
-        if (!editor || event.document !== editor.document)
-            return;
-        for (const change of event.contentChanges) {
-            if (change.text === "" || change.text.includes(";")) {
-                vscode.commands.executeCommand("editor.action.triggerParameterHints");
-                break;
-            }
-        }
+        codeBlockCache.clear();
+        if (validateTimer)
+            clearTimeout(validateTimer);
+        validateTimer = setTimeout(() => (0, _1.validateDocument)(event.document, diagnostics), 150);
     }), vscode.workspace.onDidOpenTextDocument((doc) => (0, _1.validateDocument)(doc, diagnostics)));
     ctx.subscriptions.push(vscode.languages.registerDefinitionProvider(exports.Languages, {
         provideDefinition(document, position) {
+            if (_1.lspActive)
+                return;
             const range = document.getWordRangeAtPosition(position, /\$[a-zA-Z0-9]+/);
             if (!range)
                 return;
@@ -310,6 +322,10 @@ async function readMetadataCache(storageKey, key) {
     const data = Context.globalState.get(storageKey);
     if (data?.version !== 1 || data.key !== key)
         return null;
+    if (Date.now() - data.timestamp > METADATA_MAX_AGE_MS) {
+        exports.Logger.info("Metadata cache expired, re-fetching...");
+        return null;
+    }
     return data.metadata;
 }
 /**
@@ -564,9 +580,18 @@ async function fetchFunctions(force = false) {
     const root = folders[0].uri;
     const rawInstalled = await getForgePackages();
     const rawAdditional = additionalPackages?.filter(Boolean) ?? [];
+    const defLabel = "@tryforge/forgescript";
     let failedFetch = [];
-    const def = buildPackage("tryforge/ForgeScript", "main", "@tryforge/forgescript");
+    const def = buildPackage("tryforge/ForgeScript", "main", defLabel);
     const getId = (source) => getPackageId(source);
+    const cacheKey = buildCacheKey(rawInstalled, rawAdditional, customFunctionPaths);
+    if (!force) {
+        const cached = await readMetadataCache(exports.FunctionsStorageKey, cacheKey);
+        if (cached) {
+            exports.Logger.info(`Loaded cached metadata from ${cached.length} functions.`);
+            return cached;
+        }
+    }
     const installed = (await Promise.all(rawInstalled.map(async (pkg) => {
         const source = await resolveInstalledPackage(root, pkg);
         if (!source && pkg.name !== def.label)
@@ -586,30 +611,19 @@ async function fetchFunctions(force = false) {
     ];
     const overridden = new Set(uniqueAdditional.map(getId));
     const uniqueInstalled = installed.filter((source) => !overridden.has(getId(source)));
-    const cacheKey = buildCacheKey(rawInstalled, rawAdditional, customFunctionPaths);
-    if (!force) {
-        const cached = await readMetadataCache(exports.FunctionsStorageKey, cacheKey);
-        if (cached) {
-            exports.Logger.info(`Loaded cached metadata from ${cached.length} functions.`);
-            return cached;
-        }
-    }
     const extensionFunctions = [];
     const fetched = new Set();
     let fetchMain = false;
-    for (const pkgSource of uniqueInstalled) {
+    async function loadPackageMeta(pkgSource) {
         const pkgName = pkgSource.label ?? pkgSource.repo;
-        let handled = false;
         try {
             const localMetaUri = vscode.Uri.joinPath(root, "node_modules", pkgName, "metadata", "functions.json");
             const data = await vscode.workspace.fs.readFile(localMetaUri);
             const json = JSON.parse(new TextDecoder().decode(data));
             extensionFunctions.push(...json.map((x) => ({ ...x, source: pkgSource })));
             fetched.add(pkgName);
-            handled = true;
         }
-        catch { }
-        if (!handled) {
+        catch {
             const data = await fetchMetadata(pkgSource);
             if (data) {
                 extensionFunctions.push(...data);
@@ -623,19 +637,23 @@ async function fetchFunctions(force = false) {
             }
         }
     }
-    for (const source of uniqueAdditional) {
-        const data = await fetchMetadata(source);
-        if (data) {
-            extensionFunctions.push(...data);
-            fetched.add(source.label);
-        }
-        else {
-            if (getId(source) !== getId(def))
-                failedFetch.push(source.label);
-            else
-                fetchMain = true;
-        }
-    }
+    const fetchTasks = [
+        ...uniqueInstalled.map((source) => loadPackageMeta(source)),
+        ...uniqueAdditional.map(async (source) => {
+            const data = await fetchMetadata(source);
+            if (data) {
+                extensionFunctions.push(...data);
+                fetched.add(source.label ?? getId(source));
+            }
+            else {
+                if (getId(source) !== getId(def))
+                    failedFetch.push(source.label ?? getId(source));
+                else
+                    fetchMain = true;
+            }
+        }),
+    ];
+    await Promise.allSettled(fetchTasks);
     const hasDefaultInstalled = uniqueInstalled.some((x) => getId(x) === getId(def));
     const hasDefaultAdditional = uniqueAdditional.some((x) => getId(x) === getId(def));
     let main = [];
@@ -643,10 +661,10 @@ async function fetchFunctions(force = false) {
         const data = await fetchMetadata(def);
         if (data) {
             main = data;
-            fetched.add(def.label);
+            fetched.add(defLabel);
         }
         else
-            failedFetch.unshift(def.label);
+            failedFetch.unshift(defLabel);
     }
     const customFunctions = await (0, _1.loadCustomFunctions)(customFunctionPaths);
     const metadata = [...main, ...extensionFunctions];
@@ -663,6 +681,11 @@ async function fetchFunctions(force = false) {
         vscode.window.showErrorMessage(text);
     }
     const merged = overwriteNative(metadata, customFunctions);
+    if (merged.length === 0 && !failed) {
+        const msg = vscode.l10n.t("No ForgeScript function metadata could be loaded. Please check your internet connection and try reloading the window. Use the 'NationVSC: Fetch function metadata' command to retry.");
+        exports.Logger.warn(msg);
+        vscode.window.showWarningMessage(msg);
+    }
     await writeMetadataCache(exports.FunctionsStorageKey, cacheKey, merged);
     return merged;
 }
@@ -678,12 +701,29 @@ async function getFunctions(force = false) {
         functionsPromise = (async () => {
             const res = await fetchFunctions(force);
             functions = res;
+            functionLookupMap = buildFunctionLookupMap(res);
             return res;
         })().finally(() => {
             functionsPromise = null;
         });
     }
     return functionsPromise;
+}
+function buildFunctionLookupMap(all) {
+    const map = new Map();
+    for (const fn of all) {
+        map.set(fn.name.toLowerCase(), fn);
+        const aliases = fn.aliases ?? [];
+        for (let i = 0; i < aliases.length; i++) {
+            map.set(aliases[i].toLowerCase(), fn);
+        }
+    }
+    return map;
+}
+function lookupFunction(name) {
+    if (!functionLookupMap)
+        return undefined;
+    return functionLookupMap.get(name.toLowerCase());
 }
 /**
  * Fetches all guides from metadata.
@@ -773,16 +813,20 @@ async function getPaths(source) {
  * @param position The current position of the cursor.
  * @returns
  */
+const codeBlockCache = new Map();
 function locateCodeBlock(document, position) {
+    const cached = codeBlockCache.get(document.version);
+    if (cached !== undefined)
+        return cached;
     const text = document.getText();
     const offset = document.offsetAt(position);
-    const CodeRegex = /code:\s*(["`'])/g;
+    const regex = cloneRegex(CodeBlockRegex);
     let match;
-    while ((match = CodeRegex.exec(text)) !== null) {
+    while ((match = regex.exec(text)) !== null) {
         const quoteChar = match[1];
-        const start = CodeRegex.lastIndex;
+        const start = regex.lastIndex;
         if (isInsideComment(text, match.index)) {
-            CodeRegex.lastIndex = start;
+            regex.lastIndex = start;
             continue;
         }
         let end = -1;
@@ -796,10 +840,13 @@ function locateCodeBlock(document, position) {
             continue;
         if (offset >= start && offset <= end) {
             const slice = text.slice(start, offset);
-            return { start, end, quoteChar, slice };
+            const result = { start, end, quoteChar, slice };
+            codeBlockCache.set(document.version, result);
+            return result;
         }
-        CodeRegex.lastIndex = end + 1;
+        regex.lastIndex = end + 1;
     }
+    codeBlockCache.set(document.version, null);
     return null;
 }
 /**
@@ -845,20 +892,15 @@ async function findFunction(name, loose = false) {
     const prefix = name.match(exports.FunctionPrefixRegex)?.[0] ?? "$";
     const typed = match[1].toLowerCase();
     const strict = name.trimEnd().endsWith("[");
-    const all = await getFunctions();
-    const findFn = (fnName) => all.find((x) => x.name.toLowerCase() === fnName ||
-        (x.aliases ?? []).some((a) => a.toLowerCase() === fnName));
     if (strict) {
-        const fnName = `$${typed}`;
-        const fn = findFn(fnName);
+        const fn = lookupFunction(`$${typed}`);
         if (!fn)
             return null;
         return { fn, matchedText: prefix + typed };
     }
     for (let len = typed.length; len > 0; len--) {
         const raw = typed.slice(0, len);
-        const fnName = `$${raw}`;
-        const fn = findFn(fnName);
+        const fn = lookupFunction(`$${raw}`);
         if (fn)
             return { fn, matchedText: prefix + raw };
     }
@@ -903,7 +945,7 @@ function isEscaped(input, i, single = false, minIndex = 0) {
  * @returns
  */
 function isIgnored(text, index) {
-    const regex = new RegExp(String.raw `\$${exports.OperatorChain}(?:c|escapeCode|esc)\[`, "gi");
+    const regex = cloneRegex(EscapeFunctionRegex);
     let match;
     while ((match = regex.exec(text))) {
         const start = match.index;
@@ -951,7 +993,7 @@ function isOpeningBracket(input, bracketIndex) {
     if (/\s/.test(prev))
         return false;
     const before = input.slice(0, bracketIndex);
-    return new RegExp(`${exports.FunctionRegex.source}$`).test(before);
+    return FunctionHeadTailRegex.test(before);
 }
 /**
  * Finds the opening bracket position from the input text.
@@ -1097,6 +1139,8 @@ function bracketDepth(input) {
  */
 async function deactivate() {
     await (0, _1.disconnectRPC)();
+    const { deactivateLSP } = await import("./lsp.js");
+    await deactivateLSP();
     exports.Logger.info("Deactivated extension.");
 }
 //# sourceMappingURL=extension.js.map

@@ -13,15 +13,12 @@ import {
 	isIgnored,
 	Languages,
 	locateCodeBlock,
+	lspActive,
 	OperatorChain,
 	OperatorInfo,
 	splitArgs,
 } from ".";
 
-/**
- * Registers the hover info for functions and operators.
- * @param ctx The extension context.
- */
 export function registerHover(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerHoverProvider(Languages, {
@@ -34,7 +31,6 @@ export function registerHover(ctx: vscode.ExtensionContext) {
 				const RegexOpen = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+\[/g;
 				let fnMatch: RegExpExecArray | null;
 
-				// Condition Operator hover
 				while ((fnMatch = RegexOpen.exec(text))) {
 					const found = await findFunction(fnMatch[0].slice(0, -1));
 					if (!found) continue;
@@ -73,7 +69,6 @@ export function registerHover(ctx: vscode.ExtensionContext) {
 					}
 				}
 
-				// Operator hover
 				const operatorRange = document.getWordRangeAtPosition(position, /@\[[^\]]?\]|[!#]/);
 				if (operatorRange?.contains(position)) {
 					const line = document.lineAt(position.line).text;
@@ -104,12 +99,12 @@ export function registerHover(ctx: vscode.ExtensionContext) {
 					return new vscode.Hover(md, operatorRange);
 				}
 
+				if (lspActive) return;
+
 				const line = document.lineAt(position.line).text;
-				// const Regex = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+/g
 				const Regex = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+(\[)?/g;
 				let match: RegExpExecArray | null;
 
-				// Function hover
 				while ((match = Regex.exec(line))) {
 					const start = match.index;
 					const offset = document.offsetAt(new vscode.Position(position.line, start));

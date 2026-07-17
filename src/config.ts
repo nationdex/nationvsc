@@ -75,40 +75,51 @@ let cached: Required<IExtensionConfig> = Defaults;
  */
 export function getSettingsConfig() {
 	const vs = vscode.workspace.getConfiguration("nationvsc");
+	const workspaceSection = vs.get<Record<string, unknown>>("workspace") ?? {};
+	const globalSection = vs.get<Record<string, unknown>>("global") ?? {};
+
+	const getWorkspaceString = (key: string) =>
+		typeof workspaceSection[key] === "string" ? (workspaceSection[key] as string) : undefined;
+	const getWorkspaceStringArray = (key: string) =>
+		Array.isArray(workspaceSection[key]) ? (workspaceSection[key] as string[]) : undefined;
+	const getWorkspaceBoolean = (key: string) =>
+		typeof workspaceSection[key] === "boolean" ? (workspaceSection[key] as boolean) : undefined;
+	const getGlobalStringArray = (key: string) =>
+		Array.isArray(globalSection[key]) ? (globalSection[key] as string[]) : undefined;
 
 	return {
 		global: {
-			enabledWorkspaces: vs.get<string[]>("global.enabledWorkspaces"),
+			enabledWorkspaces: getGlobalStringArray("enabledWorkspaces"),
 		},
 		workspace: {
-			customFunctionPaths: vs.get<string[]>("workspace.customFunctionPaths"),
-			additionalPackages: vs.get<string[]>("workspace.additionalPackages"),
+			customFunctionPaths: getWorkspaceStringArray("customFunctionPaths"),
+			additionalPackages: getWorkspaceStringArray("additionalPackages"),
 			colors: {
 				function: {
-					name: vs.get<string>("workspace.colors.function.name"),
-					dollar: vs.get<string>("workspace.colors.function.dollar"),
-					semicolon: vs.get<string>("workspace.colors.function.semicolon"),
+					name: getWorkspaceString("colors.function.name"),
+					dollar: getWorkspaceString("colors.function.dollar"),
+					semicolon: getWorkspaceString("colors.function.semicolon"),
 				},
 				arguments: {
-					condition: vs.get<string>("workspace.colors.arguments.condition"),
+					condition: getWorkspaceString("colors.arguments.condition"),
 				},
 				operators: {
-					negation: vs.get<string>("workspace.colors.operators.negation"),
-					silent: vs.get<string>("workspace.colors.operators.silent"),
-					count: vs.get<string>("workspace.colors.operators.count"),
-					countDelimiter: vs.get<string>("workspace.colors.operators.countDelimiter"),
+					negation: getWorkspaceString("colors.operators.negation"),
+					silent: getWorkspaceString("colors.operators.silent"),
+					count: getWorkspaceString("colors.operators.count"),
+					countDelimiter: getWorkspaceString("colors.operators.countDelimiter"),
 				},
 			},
 			features: {
-				folding: vs.get<boolean>("workspace.features.folding"),
-				hoverInfo: vs.get<boolean>("workspace.features.hoverInfo"),
-				suggestions: vs.get<boolean>("workspace.features.suggestions"),
-				signatureHelp: vs.get<boolean>("workspace.features.signatureHelp"),
-				diagnostics: vs.get<boolean>("workspace.features.diagnostics"),
-				autocompletion: vs.get<boolean>("workspace.features.autocompletion"),
+				folding: getWorkspaceBoolean("features.folding"),
+				hoverInfo: getWorkspaceBoolean("features.hoverInfo"),
+				suggestions: getWorkspaceBoolean("features.suggestions"),
+				signatureHelp: getWorkspaceBoolean("features.signatureHelp"),
+				diagnostics: getWorkspaceBoolean("features.diagnostics"),
+				autocompletion: getWorkspaceBoolean("features.autocompletion"),
 			},
 			rpc: {
-				enabled: vs.get<boolean>("workspace.rpc.enabled"),
+				enabled: getWorkspaceBoolean("rpc.enabled"),
 			},
 		},
 	};

@@ -36,13 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerAutocompletion = registerAutocompletion;
 const vscode = __importStar(require("vscode"));
 const _1 = require(".");
-/**
- * Registers the autocompletion for functions and enums.
- * @param ctx The extension context.
- */
 function registerAutocompletion(ctx) {
     ctx.subscriptions.push(vscode.languages.registerCompletionItemProvider(_1.Languages, {
         async provideCompletionItems(document, position) {
+            if (_1.lspActive)
+                return;
             const config = (0, _1.getExtensionConfig)();
             if (!(0, _1.locateCodeBlock)(document, position) || !config.features.autocompletion)
                 return;
@@ -50,7 +48,6 @@ function registerAutocompletion(ctx) {
                 return;
             const line = document.lineAt(position).text;
             const before = line.substring(0, position.character);
-            // Function autocompletion
             const match = before.match(_1.FunctionAutocompleteRegex);
             if (match) {
                 const startIndex = position.character - match[0].length;
@@ -77,7 +74,6 @@ function registerAutocompletion(ctx) {
                         return items;
                 }
             }
-            // Enum autocompletion
             const open = (0, _1.findOpeningBracket)(before);
             if (open !== -1) {
                 const head = before.slice(0, open);

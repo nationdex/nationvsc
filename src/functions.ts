@@ -390,11 +390,8 @@ function extractCustomFunctions(text: string, fileName: string) {
 	};
 
 	function visit(node: ts.Node) {
-		// export default ...
 		if (ts.isExportAssignment(node)) pushResolved(node.expression);
-
-		// module.exports = ...
-		if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+		else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
 			const leftChain = getPropertyChain(node.left);
 			if (!leftChain) return;
 
@@ -404,7 +401,17 @@ function extractCustomFunctions(text: string, fileName: string) {
 			if (isModuleExports || isExportsDefault) pushResolved(node.right);
 		}
 
-		ts.forEachChild(node, visit);
+		if (
+			ts.isSourceFile(node) ||
+			ts.isBlock(node) ||
+			ts.isVariableStatement(node) ||
+			ts.isExpressionStatement(node) ||
+			ts.isModuleDeclaration(node) ||
+			ts.isClassDeclaration(node) ||
+			ts.isFunctionDeclaration(node)
+		) {
+			ts.forEachChild(node, visit);
+		}
 	}
 
 	visit(sf);

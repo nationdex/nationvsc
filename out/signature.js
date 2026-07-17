@@ -36,16 +36,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSignatureHelp = registerSignatureHelp;
 const vscode = __importStar(require("vscode"));
 const _1 = require(".");
-// export const FunctionPrefixRegex = /\$!?#?(?:@\[[^\]\n]?\])?[a-zA-Z0-9]+$/
-/**
- * Registers the signature help for arguments.
- * @param ctx The extension context.
- */
 function registerSignatureHelp(ctx) {
     ctx.subscriptions.push(vscode.languages.registerSignatureHelpProvider(_1.Languages, new ForgeSignatureHelpProvider(), "[", ";", "]"));
 }
 class ForgeSignatureHelpProvider {
     async provideSignatureHelp(document, position) {
+        if (_1.lspActive)
+            return null;
         const code = (0, _1.locateCodeBlock)(document, position);
         const config = (0, _1.getExtensionConfig)();
         if (!code ||

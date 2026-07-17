@@ -390,11 +390,9 @@ function extractCustomFunctions(text, fileName) {
         }
     };
     function visit(node) {
-        // export default ...
         if (typescript_1.default.isExportAssignment(node))
             pushResolved(node.expression);
-        // module.exports = ...
-        if (typescript_1.default.isBinaryExpression(node) && node.operatorToken.kind === typescript_1.default.SyntaxKind.EqualsToken) {
+        else if (typescript_1.default.isBinaryExpression(node) && node.operatorToken.kind === typescript_1.default.SyntaxKind.EqualsToken) {
             const leftChain = getPropertyChain(node.left);
             if (!leftChain)
                 return;
@@ -403,7 +401,15 @@ function extractCustomFunctions(text, fileName) {
             if (isModuleExports || isExportsDefault)
                 pushResolved(node.right);
         }
-        typescript_1.default.forEachChild(node, visit);
+        if (typescript_1.default.isSourceFile(node) ||
+            typescript_1.default.isBlock(node) ||
+            typescript_1.default.isVariableStatement(node) ||
+            typescript_1.default.isExpressionStatement(node) ||
+            typescript_1.default.isModuleDeclaration(node) ||
+            typescript_1.default.isClassDeclaration(node) ||
+            typescript_1.default.isFunctionDeclaration(node)) {
+            typescript_1.default.forEachChild(node, visit);
+        }
     }
     visit(sf);
     const unique = new Map();

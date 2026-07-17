@@ -46,20 +46,9 @@ let decoOpSilent = null;
 let decoOpCount = null;
 let decoOpCountDelim = null;
 exports.HexRegex = /^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
-/**
- * Checks whether the input is a valid hex color.
- * @param input The input text.
- * @returns
- */
 function isValidHex(input) {
     return exports.HexRegex.test(input.trim());
 }
-/**
- * Resolves a color input.
- * @param input The input text.
- * @param fallback The color fallback value.
- * @returns
- */
 function resolveColor(input, fallback) {
     if (typeof input !== "string")
         return fallback;
@@ -69,9 +58,6 @@ function resolveColor(input, fallback) {
     return hex.startsWith("#") ? hex : `#${hex}`;
 }
 let lastDecoKey = "";
-/**
- * (Re)creates decoration types only when config colors changed.
- */
 function ensureDecorations() {
     const config = (0, _1.getExtensionConfig)();
     const colors = config.colors ?? {};
@@ -109,21 +95,13 @@ function ensureDecorations() {
         d?.dispose();
     }
     decoFn = vscode.window.createTextEditorDecorationType({ color: fnColor });
-    decoDollar = vscode.window.createTextEditorDecorationType({
-        color: dollarColor,
-    });
+    decoDollar = vscode.window.createTextEditorDecorationType({ color: dollarColor });
     decoSemi = vscode.window.createTextEditorDecorationType({ color: semiColor });
     decoCond = vscode.window.createTextEditorDecorationType({ color: condColor });
     decoOpNeg = vscode.window.createTextEditorDecorationType({ color: negColor });
-    decoOpSilent = vscode.window.createTextEditorDecorationType({
-        color: silentColor,
-    });
-    decoOpCount = vscode.window.createTextEditorDecorationType({
-        color: countColor,
-    });
-    decoOpCountDelim = vscode.window.createTextEditorDecorationType({
-        color: countDelimColor,
-    });
+    decoOpSilent = vscode.window.createTextEditorDecorationType({ color: silentColor });
+    decoOpCount = vscode.window.createTextEditorDecorationType({ color: countColor });
+    decoOpCountDelim = vscode.window.createTextEditorDecorationType({ color: countDelimColor });
 }
 async function applyDecorations(editor) {
     ensureDecorations();
@@ -147,110 +125,109 @@ async function applyDecorations(editor) {
     const opSilentRanges = [];
     const opCountRanges = [];
     const opCountDelimRanges = [];
-    const ScanRegex = (0, _1.cloneRegex)(_1.FunctionScanRegex);
-    ScanRegex.lastIndex = 0;
-    let match;
-    while ((match = ScanRegex.exec(text))) {
-        const matchIndex = match.index;
-        const startPos = doc.positionAt(matchIndex);
-        if (!(0, _1.locateCodeBlock)(doc, startPos) ||
-            (0, _1.isEscaped)(text, matchIndex) ||
-            (0, _1.isIgnored)(text, matchIndex))
-            continue;
-        const full = match[0];
-        const hasOpening = full.endsWith("[");
-        let found = await (0, _1.findFunction)(full);
-        if (!found && hasOpening)
-            found = await (0, _1.findFunction)(full.slice(0, -1));
-        if (!found)
-            continue;
-        const { matchedText, fn } = found;
-        if (fn.name === "$c" && hasOpening)
-            continue;
-        const prefixMatch = matchedText.match(_1.FunctionPrefixRegex)?.[0] ?? "$";
-        const nameLength = Math.max(matchedText.length - prefixMatch.length, 0);
-        if (nameLength <= 0)
-            continue;
-        const nameStart = matchIndex + prefixMatch.length;
-        fnRanges.push(new vscode.Range(doc.positionAt(nameStart), doc.positionAt(nameStart + nameLength)));
-        dollarRanges.push(new vscode.Range(doc.positionAt(matchIndex), doc.positionAt(matchIndex + 1)));
-        const prefix = prefixMatch;
-        for (let i = 0; i < prefix.length; i++) {
-            const c = prefix[i];
-            const abs = matchIndex + i;
-            if (c === "!") {
-                opNegRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
-            }
-            else if (c === "#") {
-                opSilentRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
-            }
-            else if (c === "@") {
-                const j = prefix.indexOf("@[", i);
-                const k = j !== -1 ? prefix.indexOf("]", j) : -1;
-                if (j !== -1 && k !== -1) {
-                    const absStart = matchIndex + j;
-                    const absEnd = matchIndex + k + 1;
-                    const hasDelim = k === j + 3;
-                    if (hasDelim) {
-                        const delimAbs = absStart + 2;
-                        opCountRanges.push(new vscode.Range(doc.positionAt(absStart), doc.positionAt(absStart + 2)));
-                        opCountRanges.push(new vscode.Range(doc.positionAt(absEnd - 1), doc.positionAt(absEnd)));
-                        opCountDelimRanges.push(new vscode.Range(doc.positionAt(delimAbs), doc.positionAt(delimAbs + 1)));
-                    }
-                    else {
-                        opCountRanges.push(new vscode.Range(doc.positionAt(absStart), doc.positionAt(absEnd)));
-                    }
-                }
-                break;
-            }
-        }
-        const acceptsArgs = fn.brackets !== undefined;
-        if (!acceptsArgs || !full.endsWith("["))
-            continue;
-        const openIndex = matchIndex + full.length - 1;
-        const closeIndex = (0, _1.findMatchingBracket)(text, openIndex);
-        if (closeIndex === -1)
-            continue;
-        const argText = text.slice(openIndex + 1, closeIndex);
-        const args = (0, _1.splitArgs)(argText);
-        for (let i = 0; i < args.length; i++) {
-            const arg = args[i];
-            const meta = fn.args?.[Math.min(i, fn.args.at(-1)?.rest ? fn.args.length - 1 : i)];
-            if (!meta?.condition)
+    const skipMainDecorations = _1.lspActive;
+    if (!skipMainDecorations) {
+        const ScanRegex = (0, _1.cloneRegex)(_1.FunctionScanRegex);
+        ScanRegex.lastIndex = 0;
+        let match;
+        while ((match = ScanRegex.exec(text))) {
+            const matchIndex = match.index;
+            const startPos = doc.positionAt(matchIndex);
+            if (!(0, _1.locateCodeBlock)(doc, startPos) ||
+                (0, _1.isEscaped)(text, matchIndex) ||
+                (0, _1.isIgnored)(text, matchIndex))
                 continue;
-            const op = (0, _1.findConditionOperator)(arg.value);
-            if (op) {
-                const start = openIndex + 1 + arg.start + op.start;
-                const end = start + op.operator.length;
-                condRanges.push(new vscode.Range(doc.positionAt(start), doc.positionAt(end)));
+            const full = match[0];
+            const hasOpening = full.endsWith("[");
+            let found = await (0, _1.findFunction)(full);
+            if (!found && hasOpening)
+                found = await (0, _1.findFunction)(full.slice(0, -1));
+            if (!found)
+                continue;
+            const { matchedText, fn } = found;
+            if (fn.name === "$c" && hasOpening)
+                continue;
+            const prefixMatch = matchedText.match(_1.FunctionPrefixRegex)?.[0] ?? "$";
+            const nameLength = Math.max(matchedText.length - prefixMatch.length, 0);
+            if (nameLength <= 0)
+                continue;
+            const nameStart = matchIndex + prefixMatch.length;
+            fnRanges.push(new vscode.Range(doc.positionAt(nameStart), doc.positionAt(nameStart + nameLength)));
+            dollarRanges.push(new vscode.Range(doc.positionAt(matchIndex), doc.positionAt(matchIndex + 1)));
+            const prefix = prefixMatch;
+            for (let i = 0; i < prefix.length; i++) {
+                const c = prefix[i];
+                const abs = matchIndex + i;
+                if (c === "!") {
+                    opNegRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
+                }
+                else if (c === "#") {
+                    opSilentRanges.push(new vscode.Range(doc.positionAt(abs), doc.positionAt(abs + 1)));
+                }
+                else if (c === "@") {
+                    const j = prefix.indexOf("@[", i);
+                    const k = j !== -1 ? prefix.indexOf("]", j) : -1;
+                    if (j !== -1 && k !== -1) {
+                        const absStart = matchIndex + j;
+                        const absEnd = matchIndex + k + 1;
+                        const hasDelim = k === j + 3;
+                        if (hasDelim) {
+                            const delimAbs = absStart + 2;
+                            opCountRanges.push(new vscode.Range(doc.positionAt(absStart), doc.positionAt(absStart + 2)));
+                            opCountRanges.push(new vscode.Range(doc.positionAt(absEnd - 1), doc.positionAt(absEnd)));
+                            opCountDelimRanges.push(new vscode.Range(doc.positionAt(delimAbs), doc.positionAt(delimAbs + 1)));
+                        }
+                        else {
+                            opCountRanges.push(new vscode.Range(doc.positionAt(absStart), doc.positionAt(absEnd)));
+                        }
+                    }
+                    break;
+                }
             }
-        }
-        let depth = 0;
-        for (let i = openIndex + 1; i < closeIndex; i++) {
-            const escaped = (0, _1.isEscaped)(text, i);
-            const ch = text[i];
-            if (ch === "[" && (0, _1.isOpeningBracket)(text, i))
-                depth++;
-            else if (ch === "]" && depth > 0 && !escaped)
-                depth--;
-            else if (ch === ";" && depth === 0 && !escaped) {
-                semiRanges.push(new vscode.Range(doc.positionAt(i), doc.positionAt(i + 1)));
+            const acceptsArgs = fn.brackets !== undefined;
+            if (!acceptsArgs || !full.endsWith("["))
+                continue;
+            const openIndex = matchIndex + full.length - 1;
+            const closeIndex = (0, _1.findMatchingBracket)(text, openIndex);
+            if (closeIndex === -1)
+                continue;
+            const argText = text.slice(openIndex + 1, closeIndex);
+            const args = (0, _1.splitArgs)(argText);
+            for (let i = 0; i < args.length; i++) {
+                const arg = args[i];
+                const meta = fn.args?.[Math.min(i, fn.args.at(-1)?.rest ? fn.args.length - 1 : i)];
+                if (!meta?.condition)
+                    continue;
+                const op = (0, _1.findConditionOperator)(arg.value);
+                if (op) {
+                    const start = openIndex + 1 + arg.start + op.start;
+                    const end = start + op.operator.length;
+                    condRanges.push(new vscode.Range(doc.positionAt(start), doc.positionAt(end)));
+                }
+            }
+            let depth = 0;
+            for (let i = openIndex + 1; i < closeIndex; i++) {
+                const escaped = (0, _1.isEscaped)(text, i);
+                const ch = text[i];
+                if (ch === "[" && (0, _1.isOpeningBracket)(text, i))
+                    depth++;
+                else if (ch === "]" && depth > 0 && !escaped)
+                    depth--;
+                else if (ch === ";" && depth === 0 && !escaped) {
+                    semiRanges.push(new vscode.Range(doc.positionAt(i), doc.positionAt(i + 1)));
+                }
             }
         }
     }
-    editor.setDecorations(decoFn, fnRanges);
-    editor.setDecorations(decoDollar, dollarRanges);
-    editor.setDecorations(decoSemi, semiRanges);
+    editor.setDecorations(decoFn, skipMainDecorations ? [] : fnRanges);
+    editor.setDecorations(decoDollar, skipMainDecorations ? [] : dollarRanges);
+    editor.setDecorations(decoSemi, skipMainDecorations ? [] : semiRanges);
     editor.setDecorations(decoCond, condRanges);
-    editor.setDecorations(decoOpNeg, opNegRanges);
-    editor.setDecorations(decoOpSilent, opSilentRanges);
-    editor.setDecorations(decoOpCount, opCountRanges);
-    editor.setDecorations(decoOpCountDelim, opCountDelimRanges);
+    editor.setDecorations(decoOpNeg, skipMainDecorations ? [] : opNegRanges);
+    editor.setDecorations(decoOpSilent, skipMainDecorations ? [] : opSilentRanges);
+    editor.setDecorations(decoOpCount, skipMainDecorations ? [] : opCountRanges);
+    editor.setDecorations(decoOpCountDelim, skipMainDecorations ? [] : opCountDelimRanges);
 }
-/**
- * Registers the decorations for syntax highlighting.
- * @param ctx The extension context.
- */
 function registerDecorations(ctx) {
     ensureDecorations();
     const updateAll = () => {

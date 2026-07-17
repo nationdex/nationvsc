@@ -8,6 +8,7 @@ export * from "./folding";
 export * from "./functions";
 export * from "./guides";
 export * from "./hover";
+export * from "./lspState";
 export * from "./rpc";
 export * from "./signature";
 export * from "./suggestions";

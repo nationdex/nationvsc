@@ -15,6 +15,7 @@ await build({
 		"tls",
 		"fs",
 		"path",
+		"os",
 		"buffer",
 		"stream",
 	],

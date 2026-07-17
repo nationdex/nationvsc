@@ -79,39 +79,45 @@ let cached = exports.Defaults;
  */
 function getSettingsConfig() {
     const vs = vscode.workspace.getConfiguration("nationvsc");
+    const workspaceSection = vs.get("workspace") ?? {};
+    const globalSection = vs.get("global") ?? {};
+    const getWorkspaceString = (key) => typeof workspaceSection[key] === "string" ? workspaceSection[key] : undefined;
+    const getWorkspaceStringArray = (key) => Array.isArray(workspaceSection[key]) ? workspaceSection[key] : undefined;
+    const getWorkspaceBoolean = (key) => typeof workspaceSection[key] === "boolean" ? workspaceSection[key] : undefined;
+    const getGlobalStringArray = (key) => Array.isArray(globalSection[key]) ? globalSection[key] : undefined;
     return {
         global: {
-            enabledWorkspaces: vs.get("global.enabledWorkspaces"),
+            enabledWorkspaces: getGlobalStringArray("enabledWorkspaces"),
         },
         workspace: {
-            customFunctionPaths: vs.get("workspace.customFunctionPaths"),
-            additionalPackages: vs.get("workspace.additionalPackages"),
+            customFunctionPaths: getWorkspaceStringArray("customFunctionPaths"),
+            additionalPackages: getWorkspaceStringArray("additionalPackages"),
             colors: {
                 function: {
-                    name: vs.get("workspace.colors.function.name"),
-                    dollar: vs.get("workspace.colors.function.dollar"),
-                    semicolon: vs.get("workspace.colors.function.semicolon"),
+                    name: getWorkspaceString("colors.function.name"),
+                    dollar: getWorkspaceString("colors.function.dollar"),
+                    semicolon: getWorkspaceString("colors.function.semicolon"),
                 },
                 arguments: {
-                    condition: vs.get("workspace.colors.arguments.condition"),
+                    condition: getWorkspaceString("colors.arguments.condition"),
                 },
                 operators: {
-                    negation: vs.get("workspace.colors.operators.negation"),
-                    silent: vs.get("workspace.colors.operators.silent"),
-                    count: vs.get("workspace.colors.operators.count"),
-                    countDelimiter: vs.get("workspace.colors.operators.countDelimiter"),
+                    negation: getWorkspaceString("colors.operators.negation"),
+                    silent: getWorkspaceString("colors.operators.silent"),
+                    count: getWorkspaceString("colors.operators.count"),
+                    countDelimiter: getWorkspaceString("colors.operators.countDelimiter"),
                 },
             },
             features: {
-                folding: vs.get("workspace.features.folding"),
-                hoverInfo: vs.get("workspace.features.hoverInfo"),
-                suggestions: vs.get("workspace.features.suggestions"),
-                signatureHelp: vs.get("workspace.features.signatureHelp"),
-                diagnostics: vs.get("workspace.features.diagnostics"),
-                autocompletion: vs.get("workspace.features.autocompletion"),
+                folding: getWorkspaceBoolean("features.folding"),
+                hoverInfo: getWorkspaceBoolean("features.hoverInfo"),
+                suggestions: getWorkspaceBoolean("features.suggestions"),
+                signatureHelp: getWorkspaceBoolean("features.signatureHelp"),
+                diagnostics: getWorkspaceBoolean("features.diagnostics"),
+                autocompletion: getWorkspaceBoolean("features.autocompletion"),
             },
             rpc: {
-                enabled: vs.get("workspace.rpc.enabled"),
+                enabled: getWorkspaceBoolean("rpc.enabled"),
             },
         },
     };

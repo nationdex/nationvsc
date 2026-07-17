@@ -10,16 +10,11 @@ import {
 	isIgnored,
 	Languages,
 	locateCodeBlock,
+	lspActive,
 	splitArgs,
 	validateOperatorPrefix,
 } from ".";
 
-/**
- * Validates a document for diagnostics.
- * @param document The document to validate.
- * @param collection The diagnostic collection.
- * @returns
- */
 export async function validateDocument(
 	document: vscode.TextDocument | undefined,
 	collection: vscode.DiagnosticCollection,
@@ -29,7 +24,6 @@ export async function validateDocument(
 
 	const diagnostics: vscode.Diagnostic[] = [];
 	const text = document.getText();
-	// const Regex = /^\$!?#?(?:@\[[^\]]*\])?/
 
 	const ScanRegex = cloneRegex(FunctionScanRegex);
 	ScanRegex.lastIndex = 0;
@@ -51,7 +45,6 @@ export async function validateDocument(
 		const { fn, matchedText } = found;
 		const end = document.positionAt(index + matchedText.length);
 
-		// Deprecation warning
 		if (fn.deprecated) {
 			const hint = new vscode.Diagnostic(
 				new vscode.Range(start, end),
@@ -72,7 +65,6 @@ export async function validateDocument(
 			diagnostics.push(hint, warning);
 		}
 
-		// Experimental hint
 		if (fn.experimental) {
 			const diagnostic = new vscode.Diagnostic(
 				new vscode.Range(start, end),
@@ -83,9 +75,9 @@ export async function validateDocument(
 			);
 			diagnostics.push(diagnostic);
 		}
+
 		const { isInvalidOrder, rawPrefix } = validateOperatorPrefix(base);
 
-		// Invalid operator order
 		if (isInvalidOrder) {
 			const offset = rawPrefix.length;
 			const opStart = document.positionAt(index + 1);
@@ -100,7 +92,6 @@ export async function validateDocument(
 			continue;
 		}
 
-		// Duplicated operators
 		const strictPrefix = base.match(FunctionPrefixRegex)?.[0] ?? "$";
 		if (rawPrefix.length > strictPrefix.length) {
 			const extraStart = document.positionAt(index + strictPrefix.length);
@@ -115,6 +106,8 @@ export async function validateDocument(
 			continue;
 		}
 
+		if (lspActive) continue;
+
 		const isAttached =
 			matchedText.length === base.length && matchedText.toLowerCase() === base.toLowerCase();
 		const hasOpeningAttached = hasOpening && isAttached;
@@ -125,7 +118,6 @@ export async function validateDocument(
 
 		const range = new vscode.Range(start, end);
 
-		// Missing required brackets
 		if (requiresArgs && !hasOpeningAttached) {
 			diagnostics.push(
 				new vscode.Diagnostic(
@@ -143,7 +135,6 @@ export async function validateDocument(
 			const openIndex = index + full.length - 1;
 			const closeIndex = findMatchingBracket(text, openIndex);
 
-			// Missing closing bracket
 			if (closeIndex === -1) {
 				diagnostics.push(
 					new vscode.Diagnostic(
@@ -158,7 +149,6 @@ export async function validateDocument(
 			const argString = text.slice(openIndex + 1, closeIndex);
 			const providedArgs = splitArgs(argString);
 
-			// Too few arguments
 			for (let i = 0; i < args.length; i++) {
 				const expected = args[i];
 				const provided = providedArgs[i];
@@ -176,7 +166,6 @@ export async function validateDocument(
 				}
 			}
 
-			// Too many arguments
 			if (providedArgs.length > args.length && !args.at(-1)?.rest) {
 				const end = document.positionAt(closeIndex + 1);
 				diagnostics.push(

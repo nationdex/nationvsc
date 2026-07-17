@@ -24,6 +24,7 @@ __exportStar(require("./folding"), exports);
 __exportStar(require("./functions"), exports);
 __exportStar(require("./guides"), exports);
 __exportStar(require("./hover"), exports);
+__exportStar(require("./lspState"), exports);
 __exportStar(require("./rpc"), exports);
 __exportStar(require("./signature"), exports);
 __exportStar(require("./suggestions"), exports);

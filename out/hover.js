@@ -36,10 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerHover = registerHover;
 const vscode = __importStar(require("vscode"));
 const _1 = require(".");
-/**
- * Registers the hover info for functions and operators.
- * @param ctx The extension context.
- */
 function registerHover(ctx) {
     ctx.subscriptions.push(vscode.languages.registerHoverProvider(_1.Languages, {
         async provideHover(document, position) {
@@ -50,7 +46,6 @@ function registerHover(ctx) {
             const offset = document.offsetAt(position);
             const RegexOpen = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+\[/g;
             let fnMatch;
-            // Condition Operator hover
             while ((fnMatch = RegexOpen.exec(text))) {
                 const found = await (0, _1.findFunction)(fnMatch[0].slice(0, -1));
                 if (!found)
@@ -83,7 +78,6 @@ function registerHover(ctx) {
                     return new vscode.Hover(md, new vscode.Range(document.positionAt(start), document.positionAt(end)));
                 }
             }
-            // Operator hover
             const operatorRange = document.getWordRangeAtPosition(position, /@\[[^\]]?\]|[!#]/);
             if (operatorRange?.contains(position)) {
                 const line = document.lineAt(position.line).text;
@@ -112,11 +106,11 @@ function registerHover(ctx) {
                 md.appendMarkdown(`**${doc.name} (\`${opStr}\`)**\n\n${doc.description}`);
                 return new vscode.Hover(md, operatorRange);
             }
+            if (_1.lspActive)
+                return;
             const line = document.lineAt(position.line).text;
-            // const Regex = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+/g
             const Regex = /\$!?#?(?:@\[[^\]]?\])?[a-zA-Z0-9]+(\[)?/g;
             let match;
-            // Function hover
             while ((match = Regex.exec(line))) {
                 const start = match.index;
                 const offset = document.offsetAt(new vscode.Position(position.line, start));

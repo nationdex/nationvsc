@@ -2,15 +2,21 @@
 	"name": "nationvsc",
 	"displayName": "NationVSC",
 	"description": "%extension.description%",
-	"publisher": "tryforge",
-	"version": "1.2.8",
+	"publisher": "nationdex",
+	"version": "1.0.0",
 	"icon": "./assets/Nationdex.png",
 	"main": "./out/extension.js",
 	"browser": "./out/web/extension.js",
 	"l10n": "./translations",
-	"author": {
-		"name": "xNickyDev"
-	},
+	"authors": [
+		{
+			"name": "xNickyDev"
+		},
+		{
+			"name": "ariel-aram",
+			"email": "arielaram@nationdex.com"
+		}
+	],
 	"engines": {
 		"vscode": "^1.105.0"
 	},
@@ -32,8 +38,11 @@
 		"onLanguage:typescript",
 		"onLanguage:javascriptreact",
 		"onLanguage:typescriptreact",
+		"onLanguage:forge",
 		"workspaceContains:.forgevsc.json",
-		"workspaceContains:.vscode/.forgevsc.json"
+		"workspaceContains:.vscode/.forgevsc.json",
+		"workspaceContains:forgeconfig.json",
+		"workspaceContains:.vscode/forgeconfig.json"
 	],
 	"contributes": {
 		"languages": [
@@ -117,6 +126,31 @@
 				"title": "%command.openExtensionSettings.title%",
 				"category": "NationVSC",
 				"icon": "$(settings)"
+			},
+			{
+				"command": "nationvsc.createForgeConfig",
+				"title": "%command.createForgeConfig.title%",
+				"category": "NationVSC"
+			},
+			{
+				"command": "nationvsc.updateForgeLSP",
+				"title": "%command.updateForgeLSP.title%",
+				"category": "NationVSC"
+			},
+			{
+				"command": "nationvsc.useCustomForgeLSPBinary",
+				"title": "%command.useCustomForgeLSPBinary.title%",
+				"category": "NationVSC"
+			},
+			{
+				"command": "nationvsc.resetForgeLSPPath",
+				"title": "%command.resetForgeLSPPath.title%",
+				"category": "NationVSC"
+			},
+			{
+				"command": "nationvsc.restartForgeLSP",
+				"title": "%command.restartForgeLSP.title%",
+				"category": "NationVSC"
 			}
 		],
 		"grammars": [
@@ -138,6 +172,13 @@
 					".vscode/.forgevsc.json"
 				],
 				"url": "./nationvsc.schema.json"
+			},
+			{
+				"fileMatch": [
+					"forgeconfig.json",
+					".vscode/forgeconfig.json"
+				],
+				"url": "./forgeconfig.schema.json"
 			}
 		],
 		"viewsContainers": {
@@ -368,6 +409,29 @@
 					"type": "boolean",
 					"default": true,
 					"description": "%config.workspace.rpc.enabled.description%"
+				},
+				"nationvsc.lsp.enabled": {
+					"order": 100,
+					"type": "boolean",
+					"default": true,
+					"description": "%config.lsp.enabled.description%"
+				},
+				"nationvsc.lsp.trace.server": {
+					"order": 101,
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "%config.lsp.trace.server.description%"
+				},
+				"nationvsc.lsp.binaryName": {
+					"order": 102,
+					"type": "string",
+					"default": "",
+					"description": "%config.lsp.binaryName.description%"
 				}
 			}
 		}
@@ -400,7 +464,9 @@
 	},
 	"dependencies": {
 		"@xhayper/discord-rpc": "^1.3.4",
-		"typescript": "^6.0.3"
+		"axios": "^1.8.0",
+		"typescript": "^6.0.3",
+		"vscode-languageclient": "^9.0.1"
 	},
 	"allowScripts": {
 		"@playwright/browser-chromium@1.61.0": true,

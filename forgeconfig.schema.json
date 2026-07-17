@@ -1,0 +1,240 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ForgeConfig Schema",
+	"description": "Configuration schema for ForgeScript LSP server",
+	"type": "object",
+	"required": ["urls"],
+	"properties": {
+		"urls": {
+			"type": "array",
+			"description": "Array of metadata source URLs or GitHub shorthands",
+			"items": {
+				"type": "string",
+				"description": "URL or GitHub shorthand (e.g., 'github:owner/repo#branch')"
+			},
+			"minItems": 1,
+			"examples": [
+				"https://raw.githubusercontent.com/tryforge/forgescript/dev/metadata/functions.json",
+				"github:tryforge/forgescript#dev",
+				"github:tryforge/forgelinked#dev",
+				"github:tryforge/forgedb#dev",
+				"github:tryforge/forgecanvas#dev"
+			]
+		},
+		"function_colors": {
+			"type": "array",
+			"description": "Custom function colors",
+			"items": {
+				"type": "string"
+			}
+		},
+		"consistent_function_colors": {
+			"type": "boolean",
+			"description": "Enable consistent colors for functions in highlighting",
+			"default": true
+		},
+		"multiple_function_colors": {
+			"type": "boolean",
+			"description": "Enable multiple colors for nested functions in semantic highlighting",
+			"default": true
+		},
+		"custom_functions_path": {
+			"type": "string",
+			"description": "Path to custom functions folder, relative to the forge config file"
+		},
+		"custom_functions": {
+			"type": "array",
+			"description": "Array of custom function definitions",
+			"items": {
+				"type": "object",
+				"required": ["name"],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Function name (will be accessible as $functionName)",
+						"pattern": "^\\$[a-zA-Z_][a-zA-Z0-9_]*$",
+						"minLength": 1,
+						"maxLength": 100
+					},
+					"description": {
+						"type": "string",
+						"description": "Optional description of what the function does",
+						"maxLength": 500
+					},
+					"brackets": {
+						"type": "boolean",
+						"description": "Whether the function requires brackets (optional, defaults based on params presence)",
+						"default": true
+					},
+					"alias": {
+						"type": "array",
+						"description": "Optional array of alternative function names (aliases)",
+						"items": {
+							"type": "string",
+							"pattern": "^\\$[a-zA-Z_][a-zA-Z0-9_]*$",
+							"minLength": 2,
+							"maxLength": 100
+						},
+						"uniqueItems": true
+					},
+					"params": {
+						"oneOf": [
+							{
+								"type": "array",
+								"description": "Array of parameter objects with full metadata",
+								"items": {
+									"type": "object",
+									"required": ["name", "type"],
+									"properties": {
+										"name": {
+											"type": "string",
+											"description": "Parameter name",
+											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+											"minLength": 1,
+											"maxLength": 50
+										},
+										"description": {
+											"type": "string",
+											"description": "Optional parameter description",
+											"maxLength": 200
+										},
+										"type": {
+											"type": "string",
+											"description": "Parameter type",
+											"enum": ["String", "Boolean", "Number", "Object", "Array", "Any"],
+											"default": "String"
+										},
+										"required": {
+											"type": "boolean",
+											"description": "Whether this parameter is required",
+											"default": false
+										},
+										"rest": {
+											"type": "boolean",
+											"description": "Whether this parameter accepts variadic arguments (rest parameter)",
+											"default": false
+										}
+									},
+									"additionalProperties": false
+								}
+							},
+							{
+								"type": "array",
+								"description": "Simple array of parameter names as strings (all treated as required strings)",
+								"items": {
+									"type": "string",
+									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+									"minLength": 1,
+									"maxLength": 50
+								},
+								"uniqueItems": true
+							}
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"uniqueItems": true
+		},
+		"log_level": {
+			"type": "string",
+			"description": "Log level for the ForgeLSP server",
+			"enum": ["trace", "debug", "info", "warn", "error"],
+			"default": "info"
+		}
+	},
+	"additionalProperties": false,
+	"examples": [
+		{
+			"urls": [
+				"github:tryforge/forgescript#dev",
+				"github:tryforge/forgelinked#dev",
+				"github:tryforge/forgedb#dev",
+				"github:tryforge/forgecanvas#dev"
+			],
+			"multiple_function_colors": true,
+			"custom_functions": [
+				{
+					"name": "chatGemini",
+					"description": "Chat with Gemini AI",
+					"params": [
+						{
+							"name": "prompt",
+							"description": "Prompts to chat",
+							"type": "String",
+							"required": true
+						},
+						{
+							"name": "info",
+							"description": "Show a info in JSON (Default: false)",
+							"type": "Boolean",
+							"required": false
+						},
+						{
+							"name": "googlecookies",
+							"description": "Input Google Cookies / Object data",
+							"type": "String",
+							"required": false
+						},
+						{
+							"name": "conversation",
+							"description": "Object conversation",
+							"type": "String",
+							"required": false
+						},
+						{
+							"name": "f_imgreq",
+							"description": "Force Generate Image (Unstable) (Default: false)",
+							"type": "Boolean",
+							"required": false
+						}
+					]
+				},
+				{
+					"name": "simpleFunction",
+					"description": "A function with simple string parameters",
+					"params": ["param1", "param2", "param3"]
+				},
+				{
+					"name": "arrayFunction",
+					"description": "A function with typed parameters",
+					"params": [
+						{
+							"name": "text",
+							"type": "String",
+							"required": true
+						},
+						{
+							"name": "count",
+							"type": "Number",
+							"required": false
+						},
+						{
+							"name": "enabled",
+							"type": "Boolean",
+							"required": false
+						},
+						{
+							"name": "metadata",
+							"type": "Object",
+							"required": false
+						}
+					]
+				}
+			]
+		},
+		{
+			"urls": [
+				"https://raw.githubusercontent.com/tryforge/forgescript/dev/metadata/functions.json"
+			],
+			"multiple_function_colors": false,
+			"custom_functions": [
+				{
+					"name": "myCustomFunc",
+					"description": "My custom function",
+					"params": ["input", "output"]
+				}
+			]
+		}
+	]
+}

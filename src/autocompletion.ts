@@ -12,20 +12,18 @@ import {
 	isIgnored,
 	Languages,
 	locateCodeBlock,
+	lspActive,
 	splitArgs,
 	validateOperatorPrefix,
 } from ".";
 
-/**
- * Registers the autocompletion for functions and enums.
- * @param ctx The extension context.
- */
 export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerCompletionItemProvider(
 			Languages,
 			{
 				async provideCompletionItems(document, position) {
+					if (lspActive) return;
 					const config = getExtensionConfig();
 					if (!locateCodeBlock(document, position) || !config.features.autocompletion) return;
 					if (isIgnored(document.getText(), document.offsetAt(position))) return;
@@ -33,7 +31,6 @@ export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 					const line = document.lineAt(position).text;
 					const before = line.substring(0, position.character);
 
-					// Function autocompletion
 					const match = before.match(FunctionAutocompleteRegex);
 					if (match) {
 						const startIndex = position.character - match[0].length;
@@ -66,7 +63,6 @@ export function registerAutocompletion(ctx: vscode.ExtensionContext) {
 						}
 					}
 
-					// Enum autocompletion
 					const open = findOpeningBracket(before);
 					if (open !== -1) {
 						const head = before.slice(0, open);

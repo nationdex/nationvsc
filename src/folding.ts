@@ -7,16 +7,14 @@ import {
 	isIgnored,
 	Languages,
 	locateCodeBlock,
+	lspActive,
 } from ".";
 
-/**
- * Registers the folding for function contents.
- * @param ctx The extension context.
- */
 export function registerFolding(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerFoldingRangeProvider(Languages, {
 			provideFoldingRanges(document) {
+				if (lspActive) return null;
 				const config = getExtensionConfig();
 				if (!config.features.folding) return null;
 

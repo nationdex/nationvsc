@@ -36,19 +36,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateDocument = validateDocument;
 const vscode = __importStar(require("vscode"));
 const _1 = require(".");
-/**
- * Validates a document for diagnostics.
- * @param document The document to validate.
- * @param collection The diagnostic collection.
- * @returns
- */
 async function validateDocument(document, collection) {
     const config = (0, _1.getExtensionConfig)();
     if (!document || !_1.Languages.includes(document.languageId) || !config.features.diagnostics)
         return;
     const diagnostics = [];
     const text = document.getText();
-    // const Regex = /^\$!?#?(?:@\[[^\]]*\])?/
     const ScanRegex = (0, _1.cloneRegex)(_1.FunctionScanRegex);
     ScanRegex.lastIndex = 0;
     let match;
@@ -65,20 +58,17 @@ async function validateDocument(document, collection) {
             continue;
         const { fn, matchedText } = found;
         const end = document.positionAt(index + matchedText.length);
-        // Deprecation warning
         if (fn.deprecated) {
             const hint = new vscode.Diagnostic(new vscode.Range(start, end), vscode.l10n.t("This function is deprecated and its use is discouraged. It may be removed in upcoming releases. Use a supported alternative if available."), vscode.DiagnosticSeverity.Hint);
             const warning = new vscode.Diagnostic(new vscode.Range(start, end), vscode.l10n.t("Function `{0}` is deprecated. Use an available alternative instead", fn.name), vscode.DiagnosticSeverity.Warning);
             warning.tags = [vscode.DiagnosticTag.Deprecated];
             diagnostics.push(hint, warning);
         }
-        // Experimental hint
         if (fn.experimental) {
             const diagnostic = new vscode.Diagnostic(new vscode.Range(start, end), vscode.l10n.t("This is an experimental function. It may not work as expected and is not guaranteed to be stable. Expect bugs, changes, or removal."), vscode.DiagnosticSeverity.Hint);
             diagnostics.push(diagnostic);
         }
         const { isInvalidOrder, rawPrefix } = (0, _1.validateOperatorPrefix)(base);
-        // Invalid operator order
         if (isInvalidOrder) {
             const offset = rawPrefix.length;
             const opStart = document.positionAt(index + 1);
@@ -86,7 +76,6 @@ async function validateDocument(document, collection) {
             diagnostics.push(new vscode.Diagnostic(new vscode.Range(opStart, opEnd), vscode.l10n.t("Function `{0}` has invalid operator order", fn.name), vscode.DiagnosticSeverity.Error));
             continue;
         }
-        // Duplicated operators
         const strictPrefix = base.match(_1.FunctionPrefixRegex)?.[0] ?? "$";
         if (rawPrefix.length > strictPrefix.length) {
             const extraStart = document.positionAt(index + strictPrefix.length);
@@ -94,13 +83,14 @@ async function validateDocument(document, collection) {
             diagnostics.push(new vscode.Diagnostic(new vscode.Range(extraStart, extraEnd), vscode.l10n.t("Function `{0}` has duplicated operators supplied", fn.name), vscode.DiagnosticSeverity.Error));
             continue;
         }
+        if (_1.lspActive)
+            continue;
         const isAttached = matchedText.length === base.length && matchedText.toLowerCase() === base.toLowerCase();
         const hasOpeningAttached = hasOpening && isAttached;
         const args = fn.args ?? [];
         const acceptsArgs = fn.brackets !== undefined && args.length > 0;
         const requiresArgs = fn.brackets;
         const range = new vscode.Range(start, end);
-        // Missing required brackets
         if (requiresArgs && !hasOpeningAttached) {
             diagnostics.push(new vscode.Diagnostic(range, vscode.l10n.t("Function `{0}` requires brackets", fn.name), vscode.DiagnosticSeverity.Error));
             continue;
@@ -110,14 +100,12 @@ async function validateDocument(document, collection) {
         if (acceptsArgs && hasOpening) {
             const openIndex = index + full.length - 1;
             const closeIndex = (0, _1.findMatchingBracket)(text, openIndex);
-            // Missing closing bracket
             if (closeIndex === -1) {
                 diagnostics.push(new vscode.Diagnostic(range, vscode.l10n.t("Function `{0}` is missing brace closure", fn.name), vscode.DiagnosticSeverity.Error));
                 continue;
             }
             const argString = text.slice(openIndex + 1, closeIndex);
             const providedArgs = (0, _1.splitArgs)(argString);
-            // Too few arguments
             for (let i = 0; i < args.length; i++) {
                 const expected = args[i];
                 const provided = providedArgs[i];
@@ -127,7 +115,6 @@ async function validateDocument(document, collection) {
                     diagnostics.push(new vscode.Diagnostic(new vscode.Range(argStart, argEnd), vscode.l10n.t("Function `{0}` is missing argument `{1}`", fn.name, expected.name), vscode.DiagnosticSeverity.Error));
                 }
             }
-            // Too many arguments
             if (providedArgs.length > args.length && !args.at(-1)?.rest) {
                 const end = document.positionAt(closeIndex + 1);
                 diagnostics.push(new vscode.Diagnostic(new vscode.Range(start, end), args.length === 1

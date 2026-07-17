@@ -8,6 +8,7 @@ import {
 	getExtensionConfig,
 	loadCustomFunctions,
 	loadExtensionConfig,
+	lspActive,
 	registerAutocompletion,
 	registerCommands,
 	registerDecorations,
@@ -55,8 +56,11 @@ export interface IMetadataCache<T> {
 	metadata: T;
 }
 
+const METADATA_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 let functions: FunctionMetadata[] | null = null;
 let functionsPromise: Promise<FunctionMetadata[]> | null = null;
+let functionLookupMap: Map<string, FunctionMetadata> | null = null;
 
 let guides: GuideMetadata[] | null = null;
 let guidesPromise: Promise<GuideMetadata[]> | null = null;
@@ -93,6 +97,10 @@ export const LooseFunctionPrefixRegex = new RegExp(String.raw`^\$${LooseOperator
 
 export const ConditionOperatorRegex = /==|!=|<=|>=|<|>/g;
 export const InvalidOperatorRegex = /#.*!|@\[\].*!|@\[\].*#/;
+
+const EscapeFunctionRegex = new RegExp(String.raw`\$${OperatorChain}(?:c|escapeCode|esc)\[`, "gi");
+const CodeBlockRegex = /code:\s*(["`'])/g;
+const FunctionHeadTailRegex = new RegExp(`${FunctionRegex.source}$`);
 
 export const DocsUrl = "https://docs.botforge.org/";
 export const Languages = ["javascript", "typescript", "javascriptreact", "typescriptreact"];
@@ -181,6 +189,11 @@ export async function activate(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(Logger);
 	registerDefaultCommands(ctx);
 
+	if (vscode.env.uiKind === vscode.UIKind.Desktop) {
+		const lsp = await import("./lsp.js");
+		lsp.registerLSPCommands(ctx);
+	}
+
 	if (!isEnabled) {
 		Logger.info("Extension is disabled for this workspace.");
 		const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -222,7 +235,7 @@ async function initialize(ctx: vscode.ExtensionContext) {
 	const config = getExtensionConfig();
 	if (vscode.env.uiKind === vscode.UIKind.Desktop && config.rpc.enabled) {
 		createRPCStatusBar(ctx);
-		await registerRPC(ctx);
+		registerRPC(ctx).catch((err) => Logger.warn(`RPC init deferred: ${String(err)}`));
 	}
 
 	registerCommands(ctx);
@@ -236,6 +249,14 @@ async function initialize(ctx: vscode.ExtensionContext) {
 	registerAutocompletion(ctx);
 	registerSignatureHelp(ctx);
 	registerSuggestions(ctx);
+
+	if (vscode.env.uiKind === vscode.UIKind.Desktop) {
+		const lsp = await import("./lsp.js");
+
+		if (lsp.hasForgeLSPConfig()) {
+			lsp.startLSP(ctx).catch((err) => Logger.error(`Failed to start ForgeLSP: ${String(err)}`));
+		}
+	}
 
 	const diagnostics = vscode.languages.createDiagnosticCollection("forge");
 	ctx.subscriptions.push(diagnostics);
@@ -254,19 +275,14 @@ async function initialize(ctx: vscode.ExtensionContext) {
 		}
 	}, 0);
 
+	let validateTimer: ReturnType<typeof setTimeout> | undefined;
+
 	ctx.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			validateDocument(event.document, diagnostics);
+			codeBlockCache.clear();
 
-			const editor = vscode.window.activeTextEditor;
-			if (!editor || event.document !== editor.document) return;
-
-			for (const change of event.contentChanges) {
-				if (change.text === "" || change.text.includes(";")) {
-					vscode.commands.executeCommand("editor.action.triggerParameterHints");
-					break;
-				}
-			}
+			if (validateTimer) clearTimeout(validateTimer);
+			validateTimer = setTimeout(() => validateDocument(event.document, diagnostics), 150);
 		}),
 		vscode.workspace.onDidOpenTextDocument((doc) => validateDocument(doc, diagnostics)),
 	);
@@ -274,6 +290,7 @@ async function initialize(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerDefinitionProvider(Languages, {
 			provideDefinition(document, position) {
+				if (lspActive) return;
 				const range = document.getWordRangeAtPosition(position, /\$[a-zA-Z0-9]+/);
 				if (!range) return;
 
@@ -403,6 +420,10 @@ function buildCacheKey(
 async function readMetadataCache<T>(storageKey: string, key: string) {
 	const data = Context.globalState.get<IMetadataCache<T>>(storageKey);
 	if (data?.version !== 1 || data.key !== key) return null;
+	if (Date.now() - data.timestamp > METADATA_MAX_AGE_MS) {
+		Logger.info("Metadata cache expired, re-fetching...");
+		return null;
+	}
 	return data.metadata;
 }
 
@@ -681,10 +702,20 @@ export async function fetchFunctions(force: boolean = false) {
 
 	const rawInstalled = await getForgePackages();
 	const rawAdditional = additionalPackages?.filter(Boolean) ?? [];
-	let failedFetch = [];
+	const defLabel = "@tryforge/forgescript";
+	let failedFetch: string[] = [];
 
-	const def = buildPackage("tryforge/ForgeScript", "main", "@tryforge/forgescript");
+	const def = buildPackage("tryforge/ForgeScript", "main", defLabel);
 	const getId = (source: PackageSource) => getPackageId(source);
+
+	const cacheKey = buildCacheKey(rawInstalled, rawAdditional, customFunctionPaths);
+	if (!force) {
+		const cached = await readMetadataCache<FunctionMetadata[]>(FunctionsStorageKey, cacheKey);
+		if (cached) {
+			Logger.info(`Loaded cached metadata from ${cached.length} functions.`);
+			return cached;
+		}
+	}
 
 	const installed = (
 		await Promise.all(
@@ -710,23 +741,12 @@ export async function fetchFunctions(force: boolean = false) {
 	const overridden = new Set(uniqueAdditional.map(getId));
 	const uniqueInstalled = installed.filter((source) => !overridden.has(getId(source)));
 
-	const cacheKey = buildCacheKey(rawInstalled, rawAdditional, customFunctionPaths);
-	if (!force) {
-		const cached = await readMetadataCache<FunctionMetadata[]>(FunctionsStorageKey, cacheKey);
-		if (cached) {
-			Logger.info(`Loaded cached metadata from ${cached.length} functions.`);
-			return cached;
-		}
-	}
-
 	const extensionFunctions: FunctionMetadata[] = [];
-	const fetched = new Set();
+	const fetched = new Set<string>();
 	let fetchMain = false;
 
-	for (const pkgSource of uniqueInstalled) {
+	async function loadPackageMeta(pkgSource: PackageSource) {
 		const pkgName = pkgSource.label ?? pkgSource.repo;
-		let handled = false;
-
 		try {
 			const localMetaUri = vscode.Uri.joinPath(
 				root,
@@ -737,13 +757,9 @@ export async function fetchFunctions(force: boolean = false) {
 			);
 			const data = await vscode.workspace.fs.readFile(localMetaUri);
 			const json = JSON.parse(new TextDecoder().decode(data)) as FunctionMetadata[];
-
 			extensionFunctions.push(...json.map((x) => ({ ...x, source: pkgSource })));
 			fetched.add(pkgName);
-			handled = true;
-		} catch {}
-
-		if (!handled) {
+		} catch {
 			const data = await fetchMetadata(pkgSource);
 			if (data) {
 				extensionFunctions.push(...data);
@@ -755,16 +771,21 @@ export async function fetchFunctions(force: boolean = false) {
 		}
 	}
 
-	for (const source of uniqueAdditional) {
-		const data = await fetchMetadata(source);
-		if (data) {
-			extensionFunctions.push(...data);
-			fetched.add(source.label);
-		} else {
-			if (getId(source) !== getId(def)) failedFetch.push(source.label);
-			else fetchMain = true;
-		}
-	}
+	const fetchTasks = [
+		...uniqueInstalled.map((source) => loadPackageMeta(source)),
+		...uniqueAdditional.map(async (source) => {
+			const data = await fetchMetadata(source);
+			if (data) {
+				extensionFunctions.push(...data);
+				fetched.add(source.label ?? getId(source));
+			} else {
+				if (getId(source) !== getId(def)) failedFetch.push(source.label ?? getId(source));
+				else fetchMain = true;
+			}
+		}),
+	];
+
+	await Promise.allSettled(fetchTasks);
 
 	const hasDefaultInstalled = uniqueInstalled.some((x) => getId(x) === getId(def));
 	const hasDefaultAdditional = uniqueAdditional.some((x) => getId(x) === getId(def));
@@ -774,8 +795,8 @@ export async function fetchFunctions(force: boolean = false) {
 		const data = await fetchMetadata(def);
 		if (data) {
 			main = data;
-			fetched.add(def.label);
-		} else failedFetch.unshift(def.label);
+			fetched.add(defLabel);
+		} else failedFetch.unshift(defLabel);
 	}
 
 	const customFunctions = await loadCustomFunctions(customFunctionPaths);
@@ -801,6 +822,14 @@ export async function fetchFunctions(force: boolean = false) {
 	}
 	const merged = overwriteNative(metadata, customFunctions as FunctionMetadata[]);
 
+	if (merged.length === 0 && !failed) {
+		const msg = vscode.l10n.t(
+			"No ForgeScript function metadata could be loaded. Please check your internet connection and try reloading the window. Use the 'NationVSC: Fetch function metadata' command to retry.",
+		);
+		Logger.warn(msg);
+		vscode.window.showWarningMessage(msg);
+	}
+
 	await writeMetadataCache(FunctionsStorageKey, cacheKey, merged);
 	return merged;
 }
@@ -817,6 +846,7 @@ export async function getFunctions(force: boolean = false) {
 		functionsPromise = (async () => {
 			const res = await fetchFunctions(force);
 			functions = res;
+			functionLookupMap = buildFunctionLookupMap(res);
 			return res;
 		})().finally(() => {
 			functionsPromise = null;
@@ -824,6 +854,23 @@ export async function getFunctions(force: boolean = false) {
 	}
 
 	return functionsPromise;
+}
+
+function buildFunctionLookupMap(all: FunctionMetadata[]) {
+	const map = new Map<string, FunctionMetadata>();
+	for (const fn of all) {
+		map.set(fn.name.toLowerCase(), fn);
+		const aliases = fn.aliases ?? [];
+		for (let i = 0; i < aliases.length; i++) {
+			map.set(aliases[i].toLowerCase(), fn);
+		}
+	}
+	return map;
+}
+
+function lookupFunction(name: string): FunctionMetadata | undefined {
+	if (!functionLookupMap) return undefined;
+	return functionLookupMap.get(name.toLowerCase());
 }
 
 /**
@@ -924,19 +971,30 @@ export async function getPaths(source: PackageSource) {
  * @param position The current position of the cursor.
  * @returns
  */
-export function locateCodeBlock(document: vscode.TextDocument, position: vscode.Position) {
+const codeBlockCache = new Map<
+	number,
+	null | { start: number; end: number; quoteChar: string; slice: string }
+>();
+
+export function locateCodeBlock(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): { start: number; end: number; quoteChar: string; slice: string } | null {
+	const cached = codeBlockCache.get(document.version);
+	if (cached !== undefined) return cached;
+
 	const text = document.getText();
 	const offset = document.offsetAt(position);
 
-	const CodeRegex = /code:\s*(["`'])/g;
+	const regex = cloneRegex(CodeBlockRegex);
 	let match: RegExpExecArray | null;
 
-	while ((match = CodeRegex.exec(text)) !== null) {
+	while ((match = regex.exec(text)) !== null) {
 		const quoteChar = match[1];
-		const start = CodeRegex.lastIndex;
+		const start = regex.lastIndex;
 
 		if (isInsideComment(text, match.index)) {
-			CodeRegex.lastIndex = start;
+			regex.lastIndex = start;
 			continue;
 		}
 
@@ -950,12 +1008,15 @@ export function locateCodeBlock(document: vscode.TextDocument, position: vscode.
 
 		if (offset >= start && offset <= end) {
 			const slice = text.slice(start, offset);
-			return { start, end, quoteChar, slice };
+			const result = { start, end, quoteChar, slice };
+			codeBlockCache.set(document.version, result);
+			return result;
 		}
 
-		CodeRegex.lastIndex = end + 1;
+		regex.lastIndex = end + 1;
 	}
 
+	codeBlockCache.set(document.version, null);
 	return null;
 }
 
@@ -1010,25 +1071,15 @@ export async function findFunction(name: string, loose: boolean = false) {
 	const typed = match[1].toLowerCase();
 	const strict = name.trimEnd().endsWith("[");
 
-	const all = await getFunctions();
-	const findFn = (fnName: string) =>
-		all.find(
-			(x) =>
-				x.name.toLowerCase() === fnName ||
-				(x.aliases ?? []).some((a) => a.toLowerCase() === fnName),
-		);
-
 	if (strict) {
-		const fnName = `$${typed}`;
-		const fn = findFn(fnName);
+		const fn = lookupFunction(`$${typed}`);
 		if (!fn) return null;
 		return { fn, matchedText: prefix + typed };
 	}
 
 	for (let len = typed.length; len > 0; len--) {
 		const raw = typed.slice(0, len);
-		const fnName = `$${raw}`;
-		const fn = findFn(fnName);
+		const fn = lookupFunction(`$${raw}`);
 		if (fn) return { fn, matchedText: prefix + raw };
 	}
 
@@ -1077,7 +1128,7 @@ export function isEscaped(input: string, i: number, single: boolean = false, min
  * @returns
  */
 export function isIgnored(text: string, index: number) {
-	const regex = new RegExp(String.raw`\$${OperatorChain}(?:c|escapeCode|esc)\[`, "gi");
+	const regex = cloneRegex(EscapeFunctionRegex);
 	let match: RegExpExecArray | null;
 
 	while ((match = regex.exec(text))) {
@@ -1130,7 +1181,7 @@ export function isOpeningBracket(input: string, bracketIndex: number) {
 	if (/\s/.test(prev)) return false;
 
 	const before = input.slice(0, bracketIndex);
-	return new RegExp(`${FunctionRegex.source}$`).test(before);
+	return FunctionHeadTailRegex.test(before);
 }
 
 /**
@@ -1295,5 +1346,7 @@ export function bracketDepth(input: string) {
  */
 export async function deactivate() {
 	await disconnectRPC();
+	const { deactivateLSP } = await import("./lsp.js");
+	await deactivateLSP();
 	Logger.info("Deactivated extension.");
 }

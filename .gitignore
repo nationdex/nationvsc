@@ -4,3 +4,4 @@ out
 .vscode-test-web/
 .tests/
 \.env
+.opencode

@@ -11,6 +11,11 @@
 	"command.createGuide.title": "Create Guide",
 	"command.openGuideExternal.title": "Open Guide (External)",
 	"command.openExtensionSettings.title": "Open Extension Settings",
+	"command.createForgeConfig.title": "Create Forge Config",
+	"command.updateForgeLSP.title": "Update ForgeLSP Binary",
+	"command.useCustomForgeLSPBinary.title": "Use Custom ForgeLSP Binary",
+	"command.resetForgeLSPPath.title": "Reset ForgeLSP Binary to Default",
+	"command.restartForgeLSP.title": "Restart ForgeLSP",
 	"view.guides.title": "Guides",
 	"view.guides.welcome": "No guides available.\n[$(refresh) Reload Guides](command:nationvsc.reloadGuideMetadata)\n[$(add) Create Guide](command:nationvsc.createGuide)",
 	"config.global.enabledWorkspaces.description": "List of workspace names where ForgeVSC is enabled. Leave empty to enable the extension for all workspaces.",
@@ -38,5 +43,8 @@
 	"config.workspace.features.signatureHelp.description": "Whether signature help for function arguments should be enabled.",
 	"config.workspace.features.diagnostics.description": "Whether diagnostics for function validation should be enabled.",
 	"config.workspace.features.autocompletion.description": "Whether autocompletion for functions and arguments should be enabled.",
-	"config.workspace.rpc.enabled.description": "Whether to enable the custom Discord RPC (Rich Presence) for this extension."
+	"config.workspace.rpc.enabled.description": "Whether to enable the custom Discord RPC (Rich Presence) for this extension.",
+	"config.lsp.enabled.description": "Whether to enable the ForgeLSP language server for ForgeScript projects.",
+	"config.lsp.trace.server.description": "Traces the communication between VS Code and the ForgeLSP language server.",
+	"config.lsp.binaryName.description": "Custom binary name for the ForgeLSP language server."
 }

@@ -9,15 +9,10 @@ import {
 	isIgnored,
 	Languages,
 	locateCodeBlock,
+	lspActive,
 	splitArgs,
 } from ".";
 
-// export const FunctionPrefixRegex = /\$!?#?(?:@\[[^\]\n]?\])?[a-zA-Z0-9]+$/
-
-/**
- * Registers the signature help for arguments.
- * @param ctx The extension context.
- */
 export function registerSignatureHelp(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.languages.registerSignatureHelpProvider(
@@ -32,6 +27,7 @@ export function registerSignatureHelp(ctx: vscode.ExtensionContext) {
 
 class ForgeSignatureHelpProvider implements vscode.SignatureHelpProvider {
 	async provideSignatureHelp(document: vscode.TextDocument, position: vscode.Position) {
+		if (lspActive) return null;
 		const code = locateCodeBlock(document, position);
 		const config = getExtensionConfig();
 		if (

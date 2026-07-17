@@ -173,7 +173,6 @@ export async function disconnectRPC() {
 export async function updateRPC(options: SetActivity) {
 	if (!rpc?.user) return;
 
-	options.largeImageKey ||= "forge";
 	options.largeImageText ||= "NationVSC";
 	options.largeImageUrl ||=
 		"https://raw.githubusercontent.com/nationdex/nationvsc/main/assets/Nationdex.png";

@@ -195,7 +195,6 @@ async function disconnectRPC() {
 async function updateRPC(options) {
     if (!rpc?.user)
         return;
-    options.largeImageKey ||= "forge";
     options.largeImageText ||= "NationVSC";
     options.largeImageUrl ||=
         "https://raw.githubusercontent.com/nationdex/nationvsc/main/assets/Nationdex.png";
